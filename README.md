@@ -220,15 +220,3 @@ Open `http://localhost:5173`
 - **Premium Visual Experience**: dark‑mode, glassmorphism, animated score rings, responsive layout.
 
 ```
-
-## 🏆 Hackathon
-
-Built for the **Agent League** hackathon, demonstrating multi-agent reasoning with Azure AI Foundry.
-
-**Category**: Reasoning & Multi-step Thinking
-
-**The pipeline tells a story**: Analyze → Debate → Predict Failure → Decide → Validate
-
----
-
-*Built with ☕ and Azure AI Foundry*
