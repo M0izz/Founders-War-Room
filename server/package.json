@@ -1,0 +1,16 @@
+{
+  "name": "founders-war-room-server",
+  "version": "1.0.0",
+  "description": "AI-powered startup analysis platform — Express.js backend",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "openai": "^4.73.0"
+  }
+}
