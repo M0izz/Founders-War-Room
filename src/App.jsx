@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import Landing from './components/Landing.jsx';
 import IdeaForm from './components/IdeaForm.jsx';
 import LoadingPipeline from './components/LoadingPipeline.jsx';
-import Boardroom from './components/Boardroom.jsx';
+import BoardroomScene from './components/BoardroomScene.jsx';
 import VersionHistory from './components/VersionHistory.jsx';
 import { analyzeIdea } from './utils/api.js';
 import { saveAnalysis, getHistory, getAnalysisById } from './utils/storage.js';
@@ -91,7 +91,7 @@ export default function App() {
       )}
 
       {currentView === 'boardroom' && analysisResult && (
-        <Boardroom
+        <BoardroomScene
           ideaData={ideaData}
           result={analysisResult}
           sharkTankMode={sharkTankMode}

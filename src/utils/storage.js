@@ -1,13 +1,23 @@
 const STORAGE_KEY = 'warroom_history';
 
+// Save a new analysis entry with extended schema
 export function saveAnalysis(ideaData, analysisResult, sharkTankMode) {
   const history = getHistory();
+  const previousEntry = history[0] || null;
+  const versionNumber = previousEntry ? previousEntry.versionNumber + 1 : 1;
   const entry = {
     id: generateId(),
-    timestamp: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    versionNumber,
     ideaData,
     analysisResult,
-    sharkTankMode,
+    founderNotes: '',
+    tags: [],
+    isFavorite: false,
+    overallScore: analysisResult?.overallScore ?? null,
+    verdict: analysisResult?.verdict ?? null,
+    previousVersionId: previousEntry ? previousEntry.id : null,
+    sharkTankMode: !!sharkTankMode,
   };
   history.unshift(entry);
   // Keep max 50 entries
@@ -43,7 +53,23 @@ export function getAnalysisById(id) {
   return history.find((entry) => entry.id === id) || null;
 }
 
-export function deleteAnalysis(id) {
+export function updateNotes(id, notes) {
+  const history = getHistory();
+  const updated = history.map((entry) =>
+    entry.id === id ? { ...entry, founderNotes: notes } : entry
+  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+}
+
+export function toggleFavorite(id) {
+  const history = getHistory();
+  const updated = history.map((entry) =>
+    entry.id === id ? { ...entry, isFavorite: !entry.isFavorite } : entry
+  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+}
+
+export function deleteVersion(id) {
   const history = getHistory();
   const filtered = history.filter((entry) => entry.id !== id);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
@@ -51,6 +77,11 @@ export function deleteAnalysis(id) {
 
 export function clearHistory() {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+export function getLatestVersion() {
+  const history = getHistory();
+  return history[0] || null;
 }
 
 function generateId() {
