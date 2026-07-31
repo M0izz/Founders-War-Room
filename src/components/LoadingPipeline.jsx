@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import AppIcon from './AppIcon.jsx';
 
-const EXECUTIVES_LIST = [
-  { role: 'CEO', name: 'Vision Strategist', emoji: '🏛️' },
-  { role: 'Investor', name: 'Business Viability Analyst', emoji: '💰' },
-  { role: 'CTO', name: 'Feasibility Engineer', emoji: '⚙️' },
-  { role: 'Marketing', name: 'Growth Architect', emoji: '📢' },
-  { role: 'Customer', name: 'Demand Validator', emoji: '🧑‍💻' },
-  { role: 'Risk', name: 'Operational Risk Analyst', emoji: '🛡️' },
-  { role: 'Grim Reaper', name: 'Death Predictor', emoji: '💀' },
-  { role: 'Chairman', name: 'Executive Arbitrator', emoji: '👑' },
+const LOADING_STAGES = [
+  { role: 'CEO', message: 'CEO entering executive chamber...', iconName: 'ceo', color: '#3b82f6' },
+  { role: 'CTO', message: 'CTO joining technical feasibility mesh...', iconName: 'cto', color: '#38bdf8' },
+  { role: 'Investor', message: 'Investor connected to financial feeds...', iconName: 'investor', color: '#fbbf24' },
+  { role: 'Marketing', message: 'Marketing analyzing viral distribution...', iconName: 'marketing', color: '#c084fc' },
+  { role: 'Customer', message: 'Customer persona validator online...', iconName: 'customer', color: '#4ade80' },
+  { role: 'Risk Advisor', message: 'Risk Advisor checking compliance landmines...', iconName: 'risk', color: '#fb923c' },
+  { role: 'Grim Reaper', message: 'Grim Reaper inspecting failure modes...', iconName: 'reaper', color: '#f87171' },
+  { role: 'Chairman', message: 'Board quorum reached. Meeting begins...', iconName: 'chairman', color: '#ffffff' },
 ];
 
 export default function LoadingPipeline({ ideaData, sharkTankMode }) {
@@ -19,14 +19,14 @@ export default function LoadingPipeline({ ideaData, sharkTankMode }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setCompletedCount((prev) => {
-        if (prev < EXECUTIVES_LIST.length) {
+        if (prev < LOADING_STAGES.length) {
           return prev + 1;
         }
         clearInterval(timer);
         setIsDoorOpening(true);
         return prev;
       });
-    }, 1200);
+    }, 1100);
 
     return () => clearInterval(timer);
   }, []);
@@ -40,24 +40,26 @@ export default function LoadingPipeline({ ideaData, sharkTankMode }) {
       <div className="transition-content glass-card-lg animate-fade-in">
         <div className="transition-header">
           <div className="greeting-pill" style={{ marginBottom: '12px' }}>
-            <span className="live-status-dot" /> {sharkTankMode ? 'SHARK TANK SCRUTINY ACTIVE' : 'EXECUTIVE QUORUM IN PROGRESS'}
+            <span className="live-status-dot" /> {sharkTankMode ? 'SHARK TANK SCRUTINY ACTIVE' : 'EXECUTIVE CHAMBER INITIALIZING'}
           </div>
-          <h1 className="transition-title">INITIALIZING WAR ROOM...</h1>
+          <h1 className="transition-title">ENTERING EXECUTIVE CHAMBER...</h1>
           <p className="transition-sub">
-            Inviting Executives for <strong style={{ color: '#fff' }}>{ideaData?.name || 'Your Startup'}</strong>...
+            Inviting Board Members for <strong style={{ color: '#ffffff' }}>{ideaData?.name || 'Your Startup'}</strong>...
           </p>
         </div>
 
         {/* Executive Verification Checklist */}
         <div className="executive-checklist-grid">
-          {EXECUTIVES_LIST.map((exec, idx) => {
+          {LOADING_STAGES.map((exec, idx) => {
             const isReady = idx < completedCount;
             const isCurrent = idx === completedCount;
             return (
               <div key={idx} className={`checklist-item ${isReady ? 'ready' : ''} ${isCurrent ? 'current' : ''}`}>
                 <div className="exec-info">
-                  <span className="exec-icon"><AppIcon emoji={exec.emoji} size={18} /></span>
-                  <span className="exec-role">{exec.role}</span>
+                  <span className="exec-icon">
+                    <AppIcon name={exec.iconName} size={18} color={exec.color} />
+                  </span>
+                  <span className="exec-role">{exec.message}</span>
                 </div>
                 <div className="exec-status">
                   {isReady ? (
@@ -74,14 +76,14 @@ export default function LoadingPipeline({ ideaData, sharkTankMode }) {
         </div>
 
         <div className="transition-footer">
-          {completedCount >= EXECUTIVES_LIST.length ? (
+          {completedCount >= LOADING_STAGES.length ? (
             <div className="board-ready-announcement glow-green animate-pulse">
-              <AppIcon emoji="👑" size={20} style={{ marginRight: '8px' }} />
-              BOARD READY. OPENING BOARDROOM DOORS...
+              <AppIcon name="chairman" size={20} color="#fbbf24" style={{ marginRight: '8px' }} />
+              BOARD QUORUM REACHED. MEETING BEGINS...
             </div>
           ) : (
             <div className="board-ready-announcement">
-              Awaiting executive quorum ({completedCount} / {EXECUTIVES_LIST.length})...
+              Assembling AI Board ({completedCount} / {LOADING_STAGES.length})...
             </div>
           )}
         </div>

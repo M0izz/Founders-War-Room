@@ -4,10 +4,12 @@ import Dashboard from './components/Dashboard.jsx';
 import IdeaForm from './components/IdeaForm.jsx';
 import LoadingPipeline from './components/LoadingPipeline.jsx';
 import BoardroomScene from './components/BoardroomScene.jsx';
-import VersionHistory from './components/VersionHistory.jsx';
+import EvolutionTimeline from './components/EvolutionTimeline.jsx';
+import ReportsView from './components/ReportsView.jsx';
+import SettingsView from './components/SettingsView.jsx';
 import AppIcon from './components/AppIcon.jsx';
 import { analyzeIdea } from './utils/api.js';
-import { saveAnalysis, getHistory, getAnalysisById } from './utils/storage.js';
+import { saveAnalysis, getHistory } from './utils/storage.js';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('landing');
@@ -15,7 +17,6 @@ export default function App() {
   const [ideaData, setIdeaData] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
   const [historyList, setHistoryList] = useState([]);
 
   // Load history on mount
@@ -45,12 +46,11 @@ export default function App() {
       setSharkTankMode(startupItem.raw.sharkTankMode || false);
       setCurrentView('boardroom');
     } else {
-      // Demo startup fallback -> open form pre-filled
       setIdeaData({
         name: startupItem.name || 'VITALINK',
         description: startupItem.description || 'QR-code based emergency medical history & allergy access for surgery & emergency care.',
         industry: startupItem.industry || 'HealthTech',
-        revenueModel: 'SaaS Subscription',
+        revenueModel: 'Subscription (SaaS)',
         targetAudience: 'Emergency medical teams & patient families',
       });
       setCurrentView('form');
@@ -60,18 +60,16 @@ export default function App() {
   const handleNavigate = useCallback((viewKey) => {
     if (viewKey === 'dashboard') setCurrentView('dashboard');
     else if (viewKey === 'landing') setCurrentView('landing');
+    else if (viewKey === 'form') setCurrentView('form');
     else if (viewKey === 'boardroom') {
       if (analysisResult) setCurrentView('boardroom');
       else setCurrentView('form');
-    } else if (viewKey === 'timeline') {
-      setShowHistory(true);
+    } else if (viewKey === 'timeline' || viewKey === 'startups') {
+      setCurrentView('timeline');
     } else if (viewKey === 'reports') {
-      if (analysisResult) setCurrentView('boardroom');
-      else setShowHistory(true);
-    } else if (viewKey === 'startups') {
-      setShowHistory(true);
+      setCurrentView('reports');
     } else if (viewKey === 'settings') {
-      alert('War Room Settings: All 8 AI Executive Agents configured & active.');
+      setCurrentView('settings');
     }
   }, [analysisResult]);
 
@@ -106,19 +104,13 @@ export default function App() {
       setCurrentView('dashboard');
     } else if (currentView === 'boardroom') {
       setCurrentView('dashboard');
+    } else if (currentView === 'timeline' || currentView === 'reports' || currentView === 'settings') {
+      setCurrentView('dashboard');
     } else if (currentView === 'dashboard') {
       setCurrentView('landing');
     }
     setError(null);
   }, [currentView]);
-
-  const handleViewHistoryItem = useCallback((entry) => {
-    setIdeaData(entry.ideaData);
-    setAnalysisResult(entry.analysisResult);
-    setSharkTankMode(entry.sharkTankMode || false);
-    setShowHistory(false);
-    setCurrentView('boardroom');
-  }, []);
 
   const appClass = sharkTankMode ? 'app shark-tank-mode' : 'app';
 
@@ -126,7 +118,7 @@ export default function App() {
     <div className={appClass}>
       {sharkTankMode && currentView !== 'landing' && currentView !== 'dashboard' && (
         <div className="shark-tank-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          <AppIcon emoji="🦈" size={16} /> Shark Tank Mode
+          <AppIcon name="risk" size={16} color="#f87171" /> Shark Tank Mode
         </div>
       )}
 
@@ -170,14 +162,31 @@ export default function App() {
           result={analysisResult}
           sharkTankMode={sharkTankMode}
           onNewAnalysis={handleNewAnalysis}
-          onViewHistory={() => setShowHistory(true)}
+          onViewHistory={() => setCurrentView('timeline')}
         />
       )}
 
-      {showHistory && (
-        <VersionHistory
-          onClose={() => setShowHistory(false)}
-          onSelect={handleViewHistoryItem}
+      {currentView === 'timeline' && (
+        <EvolutionTimeline
+          onNavigate={handleNavigate}
+          onOpenStartup={handleOpenStartup}
+          history={historyList}
+          userName="Moiz"
+          onClose={() => setCurrentView('dashboard')}
+        />
+      )}
+
+      {currentView === 'reports' && (
+        <ReportsView
+          onNavigate={handleNavigate}
+          userName="Moiz"
+        />
+      )}
+
+      {currentView === 'settings' && (
+        <SettingsView
+          onNavigate={handleNavigate}
+          userName="Moiz"
         />
       )}
     </div>

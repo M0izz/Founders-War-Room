@@ -1,82 +1,63 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AppIcon from './AppIcon.jsx';
 
-const DEFAULT_BOARD_DEBATE = [
-  {
-    speaker: 'CEO',
-    role: 'Vision Strategist',
-    color: '#4F8CFF',
-    icon: '🏛️',
-    time: '10:42 AM',
-    quote: 'This idea addresses a critical gap in emergency medical care with strong category-defining potential.',
-  },
-  {
-    speaker: 'Investor',
-    role: 'Business Viability Analyst',
-    color: '#FBBF24',
-    icon: '💰',
-    time: '10:43 AM',
-    quote: 'The revenue model concerns me. Customer acquisition cost will be high without institutional buy-in.',
-  },
-  {
-    speaker: 'Marketing',
-    role: 'Growth Architect',
-    color: '#A855F7',
-    icon: '📢',
-    time: '10:43 AM',
-    quote: 'Positioning lacks an organic viral loop. You must pivot directly to enterprise B2B hospital distribution.',
-  },
-  {
-    speaker: 'CTO',
-    role: 'Feasibility Engineer',
-    color: '#38BDF8',
-    icon: '⚙️',
-    time: '10:44 AM',
-    quote: 'Technically feasible. The MVP architecture can be deployed securely in under 90 days.',
-  },
-  {
-    speaker: 'Customer',
-    role: 'Demand Validator',
-    color: '#22C55E',
-    icon: '🧑‍💻',
-    time: '10:44 AM',
-    quote: 'Willingness to pay requires clear evidence of ROI and zero friction during emergency access.',
-  },
-  {
-    speaker: 'Risk Advisor',
-    role: 'Operational Risk Analyst',
-    color: '#F97316',
-    icon: '🛡️',
-    time: '10:45 AM',
-    quote: 'HIPAA and medical data compliance landmines must be cleared before public deployment.',
-  },
-  {
-    speaker: 'Grim Reaper',
-    role: 'Death Predictor',
-    color: '#EF4444',
-    icon: '💀',
-    time: '10:45 AM',
-    quote: 'This startup dies in Year 2 if hospital EHR incumbents copy your QR access model as a free feature.',
-  },
-  {
-    speaker: 'Chairman',
-    role: 'Executive Arbitrator',
-    color: '#F5F5F5',
-    icon: '👑',
-    time: '10:46 AM',
-    quote: 'Order in the room. The board recommends refinement on enterprise distribution and compliance. Overall Score: 8.4/10.',
-  },
-];
+// Web Audio API Synthesizer (Zero External Audio File Dependency)
+function playBoardroomSound(type) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+
+    if (type === 'chime') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3); // A5
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    } else if (type === 'chair') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(90, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } else if (type === 'click') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(900, ctx.currentTime);
+      gain.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.04);
+    }
+  } catch (err) {
+    // Ignore audio autoplay restrictions
+  }
+}
 
 const BOARD_SEATS_MAP = [
-  { id: 'chairman', role: 'Chairman', icon: '👑', color: '#F5F5F5', pos: 'top' },
-  { id: 'ceo', role: 'CEO', icon: '🏛️', color: '#4F8CFF', pos: 'left-top' },
-  { id: 'investor', role: 'Investor', icon: '💰', color: '#FBBF24', pos: 'right-top' },
-  { id: 'marketing', role: 'Marketing', icon: '📢', color: '#A855F7', pos: 'left-mid' },
-  { id: 'cto', role: 'CTO', icon: '⚙️', color: '#38BDF8', pos: 'right-mid' },
-  { id: 'customer', role: 'Customer', icon: '🧑‍💻', color: '#22C55E', pos: 'left-bot' },
-  { id: 'risk', role: 'Risk Advisor', icon: '🛡️', color: '#F97316', pos: 'right-bot' },
-  { id: 'reaper', role: 'Grim Reaper', icon: '💀', color: '#EF4444', pos: 'bot' },
+  { id: 'chairman', role: 'Chairman', iconName: 'chairman', color: '#F5F5F5', pos: 'top' },
+  { id: 'ceo', role: 'CEO', iconName: 'ceo', color: '#3b82f6', pos: 'left-top' },
+  { id: 'investor', role: 'Investor', iconName: 'investor', color: '#fbbf24', pos: 'right-top' },
+  { id: 'marketing', role: 'Marketing', iconName: 'marketing', color: '#c084fc', pos: 'left-mid' },
+  { id: 'cto', role: 'CTO', iconName: 'cto', color: '#38bdf8', pos: 'right-mid' },
+  { id: 'customer', role: 'Customer', iconName: 'customer', color: '#4ade80', pos: 'left-bot' },
+  { id: 'risk', role: 'Risk Advisor', iconName: 'risk', color: '#fb923c', pos: 'right-bot' },
+  { id: 'reaper', role: 'Grim Reaper', iconName: 'reaper', color: '#f87171', pos: 'bot' },
 ];
 
 export default function BoardroomScene({
@@ -91,50 +72,127 @@ export default function BoardroomScene({
   const [activeTab, setActiveTab] = useState('debate'); // 'debate' | 'report'
   const transcriptEndRef = useRef(null);
 
-  // Extract structured analysis from API result or default fallback
-  const overallScore = result?.overallScore || 8.4;
-  const verdict = result?.verdict || 'Needs Refinement';
-  const strengths = result?.strengths || [
-    'Critical emergency medical problem with immediate high utility.',
-    'Feasible technical architecture for rapid 90-day deployment.',
-    'Clear value proposition for patients and emergency response teams.',
-  ];
-  const weaknesses = result?.weaknesses || [
-    'High customer acquisition cost in early B2C marketing.',
-    'Monetization model requires institutional hospital validation.',
-    'Lack of viral loop in initial consumer onboarding flow.',
-  ];
-  const risks = result?.risks || [
-    'Regulatory & HIPAA data compliance requirements.',
-    'Risk of incumbents integrating QR access into existing EHR systems.',
-  ];
-  const recommendations = result?.recommendations || [
-    'Pivot marketing strategy to enterprise B2B hospital networks.',
-    'Implement end-to-end medical encryption to ensure compliance.',
-    'Introduce automated patient referral loops to lower acquisition costs.',
-    'Establish strategic partnerships with emergency medical services.',
+  // Easter Egg checks
+  const isCatIdea = ideaData?.name?.toLowerCase().includes('cat') || ideaData?.description?.toLowerCase().includes('cat') || ideaData?.description?.toLowerCase().includes('uber for cats');
+
+  const debateTimeline = [
+    {
+      speaker: 'CEO',
+      role: 'Vision Strategist',
+      color: '#3b82f6',
+      iconName: 'ceo',
+      time: '10:42 AM',
+      quote: `This startup idea addresses a critical gap in ${ideaData?.industry || 'the market'} with strong category-defining potential.`,
+    },
+    {
+      speaker: 'Investor',
+      role: 'Business Viability Analyst',
+      color: '#fbbf24',
+      iconName: 'investor',
+      time: '10:43 AM',
+      quote: isCatIdea ? "I'd invest... emotionally." : 'The initial customer acquisition cost is high, but the unit economics scale gracefully at enterprise level.',
+    },
+    {
+      speaker: 'Marketing',
+      role: 'Growth Architect',
+      color: '#c084fc',
+      iconName: 'marketing',
+      time: '10:43 AM',
+      quote: 'We need an organic viral loop. Pivot directly to B2B partnership distribution channels immediately.',
+    },
+    {
+      speaker: 'CTO',
+      role: 'Feasibility Engineer',
+      color: '#38bdf8',
+      iconName: 'cto',
+      time: '10:44 AM',
+      quote: 'Technically sound architecture. We can deploy the initial core MVP in under 90 days.',
+    },
+    {
+      speaker: 'Customer',
+      role: 'Demand Validator',
+      color: '#4ade80',
+      iconName: 'customer',
+      time: '10:44 AM',
+      quote: 'Willingness to pay is high if onboarding friction is zero and security is guaranteed.',
+    },
+    {
+      speaker: 'Risk Advisor',
+      role: 'Operational Risk Analyst',
+      color: '#fb923c',
+      iconName: 'risk',
+      time: '10:45 AM',
+      quote: 'Regulatory compliance and data protection landmines must be cleared before public rollout.',
+    },
+    {
+      speaker: 'Grim Reaper',
+      role: 'Death Predictor',
+      color: '#f87171',
+      iconName: 'reaper',
+      time: '10:45 AM',
+      quote: isCatIdea
+        ? "Nine lives still won't save this business model."
+        : 'This startup dies in Year 2 if incumbent platform players copy your primary hook as a free feature.',
+    },
+    {
+      speaker: 'Chairman',
+      role: 'Executive Arbitrator',
+      color: '#ffffff',
+      iconName: 'chairman',
+      time: '10:46 AM',
+      quote: `Quorum reached. The board approves conditional execution. Final Overall Score: ${result?.overallScore || 8.7}/10.`,
+    },
   ];
 
-  // Auto-advance debate steps
+  // Extract structured analysis
+  const overallScore = result?.overallScore || 8.7;
+  const verdict = result?.verdict || 'APPROVED WITH CONDITIONAL MVP';
+  const strengths = result?.strengths || [
+    'Huge addressable market with high demand urgency',
+    'Feasible technical architecture for 90-day deployment',
+    'Strong category-defining potential and clear value proposition',
+  ];
+  const weaknesses = result?.weaknesses || [
+    'Initial customer acquisition cost requires optimization',
+    'Regulatory compliance & data privacy risk management',
+  ];
+  const recommendations = result?.recommendations || [
+    'Build 90-Day core MVP with zero onboarding friction',
+    'Establish strategic enterprise distribution partnerships',
+    'Implement automated referral viral loops',
+    'Clear regulatory and security compliance early',
+  ];
+
+  // Auto-advance debate steps & trigger sound synth
   useEffect(() => {
     if (!isPlaying) return;
     const timer = setInterval(() => {
       setActiveStep((prev) => {
-        if (prev < DEFAULT_BOARD_DEBATE.length - 1) return prev + 1;
+        if (prev < debateTimeline.length - 1) {
+          playBoardroomSound('chair');
+          return prev + 1;
+        }
         setIsPlaying(false);
+        playBoardroomSound('chime');
         return prev;
       });
-    }, 4000);
+    }, 3800);
     return () => clearInterval(timer);
   }, [isPlaying]);
 
-  // Auto-scroll transcript to latest utterance
+  // Auto-scroll transcript
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeStep]);
 
-  const currentSpeaker = DEFAULT_BOARD_DEBATE[activeStep];
-  const progressPct = Math.round(((activeStep + 1) / DEFAULT_BOARD_DEBATE.length) * 100);
+  const handleReplayDebate = () => {
+    setActiveStep(0);
+    setIsPlaying(true);
+    playBoardroomSound('click');
+  };
+
+  const currentSpeaker = debateTimeline[activeStep];
+  const progressPct = Math.round(((activeStep + 1) / debateTimeline.length) * 100);
 
   const handleExportPDF = () => {
     window.print();
@@ -145,7 +203,7 @@ export default function BoardroomScene({
       <div className="command-bg-grid" />
       <div className="command-ambient-glow" />
 
-      {/* Top War Room Command Header */}
+      {/* Top Header */}
       <header className="war-room-header">
         <div className="header-left">
           <span className="live-pill"><span className="pulse-dot-green" /> LIVE BOARDROOM SESSION</span>
@@ -155,52 +213,55 @@ export default function BoardroomScene({
         <div className="header-nav-tabs">
           <button
             className={`tab-btn ${activeTab === 'debate' ? 'active' : ''}`}
-            onClick={() => setActiveTab('debate')}
+            onClick={() => { setActiveTab('debate'); playBoardroomSound('click'); }}
           >
-            <AppIcon emoji="🏛️" size={16} /> Live Debate
+            <AppIcon name="ceo" size={16} /> Live Debate
           </button>
           <button
             className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`}
-            onClick={() => setActiveTab('report')}
+            onClick={() => { setActiveTab('report'); playBoardroomSound('click'); }}
           >
-            <AppIcon emoji="📄" size={16} /> Executive Report
+            <AppIcon name="history" size={16} /> Executive Report
           </button>
         </div>
 
         <div className="header-actions">
-          <button className="btn-sm btn-ghost" onClick={handleExportPDF} title="Export Report PDF">
-            <AppIcon emoji="📄" size={16} /> Export PDF
+          <button className="btn-sm btn-ghost" onClick={handleReplayDebate} title="Replay Board Meeting">
+            <AppIcon name="zap" size={16} /> Replay Meeting
+          </button>
+          <button className="btn-sm btn-ghost" onClick={handleExportPDF} title="Export PDF Report">
+            <AppIcon name="history" size={16} /> Export PDF
           </button>
           <button className="btn-sm btn-primary btn-glow" onClick={onNewAnalysis}>
-            <AppIcon emoji="➕" size={16} /> New Session
+            <AppIcon name="plus" size={16} /> New Session
           </button>
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Workspace */}
       {activeTab === 'debate' ? (
         <div className="war-room-main-layout">
-          {/* Left Column: Interactive Oval Boardroom Table (60% Focus) */}
+          {/* Left Area: Oval Boardroom Scene (60% Product Focus) */}
           <div className="war-room-center-stage glass-card-lg">
             <div className="boardroom-stage-header">
               <span className="stage-eyebrow">EXECUTIVE DEBATE IN PROGRESS</span>
               <div className="playback-controls">
                 <button
                   className="control-btn"
-                  onClick={() => setIsPlaying(!isPlaying)}
+                  onClick={() => { setIsPlaying(!isPlaying); playBoardroomSound('click'); }}
                 >
-                  {isPlaying ? '⏸ Pause' : '▶ Play'}
+                  {isPlaying ? 'Pause' : 'Play'}
                 </button>
                 <button
                   className="control-btn"
-                  onClick={() => setActiveStep((prev) => (prev + 1) % DEFAULT_BOARD_DEBATE.length)}
+                  onClick={handleReplayDebate}
                 >
-                  Next Speaker ⏭
+                  Replay Debate
                 </button>
               </div>
             </div>
 
-            {/* Oval Table & Agent Seats */}
+            {/* Oval Table Diagram */}
             <div className="interactive-oval-boardroom">
               <div className="oval-table-core">
                 <div className="table-center-brand">
@@ -222,7 +283,7 @@ export default function BoardroomScene({
                       {isSpeaking && (
                         <div className="speech-bubble-pop glass-panel animate-fade-in-up">
                           <div className="bubble-speaker-tag" style={{ color: currentSpeaker.color }}>
-                            <AppIcon emoji={currentSpeaker.icon} size={14} /> {currentSpeaker.speaker}
+                            <AppIcon name={currentSpeaker.iconName} size={14} color={currentSpeaker.color} /> {currentSpeaker.speaker}
                           </div>
                           <p className="bubble-text">"{currentSpeaker.quote}"</p>
                         </div>
@@ -232,10 +293,10 @@ export default function BoardroomScene({
                         className="seat-avatar-circle"
                         style={{
                           backgroundColor: seat.color,
-                          boxShadow: isSpeaking ? `0 0 25px ${seat.color}` : 'none',
+                          boxShadow: isSpeaking ? `0 0 28px ${seat.color}` : 'none',
                         }}
                       >
-                        <AppIcon emoji={seat.icon} size={20} color="#fff" />
+                        <AppIcon name={seat.iconName} size={20} color="#fff" />
                       </div>
                       <span className="seat-role-title">{seat.role}</span>
                     </div>
@@ -244,10 +305,10 @@ export default function BoardroomScene({
               </div>
             </div>
 
-            {/* Bottom Progress Bar */}
+            {/* Bottom Progress Checklist */}
             <div className="war-room-bottom-progress">
               <div className="progress-checklist">
-                {DEFAULT_BOARD_DEBATE.map((d, i) => (
+                {debateTimeline.map((d, i) => (
                   <span
                     key={i}
                     className={`progress-chip ${i <= activeStep ? 'done' : ''}`}
@@ -260,21 +321,21 @@ export default function BoardroomScene({
             </div>
           </div>
 
-          {/* Right Sidebar: Meeting Transcript (Discord/Slack Style) */}
+          {/* Right Sidebar Transcript */}
           <aside className="war-room-transcript-sidebar glass-panel">
             <div className="transcript-header">
-              <AppIcon emoji="💬" size={18} color="#60a5fa" />
+              <AppIcon name="ceo" size={18} color="#60a5fa" />
               <h3>Meeting Transcript</h3>
             </div>
 
             <div className="transcript-feed">
-              {DEFAULT_BOARD_DEBATE.slice(0, activeStep + 1).map((item, idx) => (
+              {debateTimeline.slice(0, activeStep + 1).map((item, idx) => (
                 <div key={idx} className="transcript-item animate-fade-in-up">
                   <div
                     className="transcript-avatar"
                     style={{ backgroundColor: item.color, boxShadow: `0 0 10px ${item.color}66` }}
                   >
-                    <AppIcon emoji={item.icon} size={14} color="#fff" />
+                    <AppIcon name={item.iconName} size={14} color="#fff" />
                   </div>
 
                   <div className="transcript-body">
@@ -291,83 +352,82 @@ export default function BoardroomScene({
           </aside>
         </div>
       ) : (
-        /* Executive Report View (Investor-Style Document) */
+        /* Keynote-Style Final Verdict & Report View */
         <div className="executive-report-container animate-fade-in">
-          <div className="executive-report-document glass-card-lg">
-            <div className="report-doc-header">
-              <div className="report-brand">
-                <img src="/war_room_logo.png" alt="Logo" className="report-logo" />
-                <div>
-                  <h1 className="doc-title">EXECUTIVE REPORT</h1>
-                  <p className="doc-subtitle">AI Executive Board Verdict & Strategic Brief</p>
-                </div>
+          <div className="keynote-verdict-card glass-card-lg">
+            
+            {/* Verdict Banner */}
+            <div className="keynote-verdict-header">
+              <span className="keynote-approved-tag">APPROVED</span>
+              <h1 className="keynote-startup-title">{ideaData?.name || 'VITALINK'}</h1>
+              <p className="keynote-industry">{ideaData?.industry || 'HealthTech'}</p>
+            </div>
+
+            {/* Overall Score Keynote Hero */}
+            <div className="keynote-score-hero">
+              <span className="score-hero-label">Overall Score</span>
+              <div className="score-hero-number-row">
+                <span className="score-hero-big">{overallScore}</span>
+                <span className="score-hero-denom">/ 10</span>
               </div>
-              <div className="report-date-badge">
-                Date: {new Date().toLocaleDateString()}
+              <div className="star-rating-row">
+                <span className="star-fill">★★★★★★★★★</span>
+                <span className="star-empty">☆</span>
               </div>
             </div>
 
-            <div className="report-score-hero">
-              <div className="score-box-gold">
-                <span className="score-lbl">OVERALL SCORE</span>
-                <span className="score-num">{overallScore} <small>/ 10</small></span>
-              </div>
-              <div className="verdict-box">
-                <span className="verdict-lbl">BOARD DECISION</span>
-                <span className="verdict-val">{verdict}</span>
-              </div>
-            </div>
-
-            <div className="report-sections-grid">
-              {/* Strengths */}
-              <div className="report-block block-strengths">
-                <h3><span className="icon-green">✓</span> Key Strengths</h3>
-                <ul>
+            {/* Grid for Strengths & Weaknesses */}
+            <div className="keynote-grid-2col">
+              
+              <div className="keynote-block block-strengths">
+                <h3 className="block-title green-text">
+                  <AppIcon name="check" size={18} color="#4ade80" /> Key Strengths
+                </h3>
+                <ul className="keynote-list">
                   {strengths.map((s, i) => (
-                    <li key={i}><span className="bullet-check">✓</span> {s}</li>
+                    <li key={i}><span className="check-mark">✔</span> {s}</li>
                   ))}
                 </ul>
               </div>
 
-              {/* Weaknesses */}
-              <div className="report-block block-weaknesses">
-                <h3><span className="icon-red">✗</span> Strategic Weaknesses</h3>
-                <ul>
+              <div className="keynote-block block-weaknesses">
+                <h3 className="block-title yellow-text">
+                  <AppIcon name="warning" size={18} color="#fbbf24" /> Weaknesses & Risks
+                </h3>
+                <ul className="keynote-list">
                   {weaknesses.map((w, i) => (
-                    <li key={i}><span className="bullet-cross">✗</span> {w}</li>
+                    <li key={i}><span className="warn-mark">⚠</span> {w}</li>
                   ))}
                 </ul>
               </div>
 
-              {/* Risks */}
-              <div className="report-block block-risks">
-                <h3><span className="icon-yellow">⚠</span> Fatal Risks & Vulnerabilities</h3>
-                <ul>
-                  {risks.map((r, i) => (
-                    <li key={i}><span className="bullet-warn">⚠</span> {r}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Actionable Recommendations */}
-              <div className="report-block block-recommendations">
-                <h3><span className="icon-blue">💡</span> Board Recommendations</h3>
-                <ol>
-                  {recommendations.map((rec, i) => (
-                    <li key={i}><strong>{i + 1}.</strong> {rec}</li>
-                  ))}
-                </ol>
-              </div>
             </div>
 
-            <div className="report-actions-row">
-              <button className="btn btn-primary btn-lg btn-glow" onClick={onNewAnalysis}>
-                <AppIcon emoji="🔄" size={18} /> Generate Improved Version
-              </button>
+            {/* Recommended MVP */}
+            <div className="keynote-mvp-section">
+              <h3 className="block-title blue-text">
+                <AppIcon name="target" size={18} color="#38bdf8" /> Recommended 90-Day MVP Roadmap
+              </h3>
+              <ol className="mvp-numbered-list">
+                {recommendations.map((rec, i) => (
+                  <li key={i}><strong>Step {i + 1}:</strong> {rec}</li>
+                ))}
+              </ol>
+            </div>
+
+            {/* Actions Bar */}
+            <div className="keynote-actions-bar">
               <button className="btn btn-secondary btn-lg" onClick={handleExportPDF}>
-                <AppIcon emoji="📄" size={18} /> Export PDF / Brief
+                Download McKinsey PDF Report
+              </button>
+              <button className="btn btn-secondary btn-lg" onClick={onViewHistory}>
+                View Version Timeline
+              </button>
+              <button className="btn btn-primary btn-lg btn-glow" onClick={onNewAnalysis}>
+                Run Again / Convene Board
               </button>
             </div>
+
           </div>
         </div>
       )}

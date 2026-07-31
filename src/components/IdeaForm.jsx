@@ -2,13 +2,57 @@ import React, { useState } from 'react';
 import AppIcon from './AppIcon.jsx';
 
 const INDUSTRIES = [
-  'AI/ML', 'FinTech', 'HealthTech', 'EdTech', 'E-Commerce',
-  'SaaS', 'Marketplace', 'Social', 'Gaming', 'CleanTech', 'Other'
+  'HealthTech', 'FinTech', 'FoodTech', 'EdTech', 'AI / SaaS',
+  'E-Commerce', 'Marketplace', 'Social Media', 'CleanTech', 'Gaming', 'Other'
+];
+
+const TARGET_USERS = [
+  'Consumers (B2C)', 'Small Businesses (SMB)', 'Enterprise Companies (B2B)',
+  'Doctors / Healthcare Professionals', 'Developers & Engineers', 'Students & Educators'
 ];
 
 const REVENUE_MODELS = [
-  'SaaS Subscription', 'Marketplace Commission', 'Freemium',
-  'Advertising', 'Transaction Fees', 'License', 'Usage-Based', 'Other'
+  'Subscription (SaaS)', 'Marketplace Commission', 'Freemium Tier',
+  'Usage-Based API Pricing', 'Advertising & Data', 'Enterprise Licensing'
+];
+
+const DEMO_PRESETS = [
+  {
+    label: 'Food Delivery AI',
+    iconName: 'food',
+    name: 'FoodAI Direct',
+    description: 'An autonomous AI kitchen operator that predicts food demand, orders ingredients from local farms, and cooks meals in 5 minutes.',
+    industry: 'FoodTech',
+    targetAudience: 'Busy urban professionals & college students',
+    revenueModel: 'Subscription (SaaS)',
+  },
+  {
+    label: 'FinTech Engine',
+    iconName: 'investor',
+    name: 'VaultPulse',
+    description: 'An AI financial co-pilot that scans corporate bank accounts, predicts cash runway bottlenecks 90 days ahead, and auto-negotiates vendor bills.',
+    industry: 'FinTech',
+    targetAudience: 'Small Businesses (SMB)',
+    revenueModel: 'Subscription (SaaS)',
+  },
+  {
+    label: 'VITALINK Medical',
+    iconName: 'heart',
+    name: 'VITALINK',
+    description: 'An emergency QR code scanner app that gives ER doctors instant access to a patient’s verified medical history, allergies, and prescriptions.',
+    industry: 'HealthTech',
+    targetAudience: 'Doctors / Healthcare Professionals',
+    revenueModel: 'Enterprise Licensing',
+  },
+  {
+    label: 'Social Media AI',
+    iconName: 'marketing',
+    name: 'VibeDraft',
+    description: 'An autonomous viral video generator that turns audio voice notes into fully edited TikToks & Reels with AI avatars and auto-captions.',
+    industry: 'Social Media',
+    targetAudience: 'Consumers (B2C)',
+    revenueModel: 'Freemium Tier',
+  },
 ];
 
 export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
@@ -16,8 +60,8 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
     name: initialData?.name || '',
     description: initialData?.description || '',
     targetAudience: initialData?.targetAudience || '',
-    industry: initialData?.industry || '',
-    revenueModel: initialData?.revenueModel || '',
+    industry: initialData?.industry || 'HealthTech',
+    revenueModel: initialData?.revenueModel || 'Subscription (SaaS)',
     additionalContext: initialData?.additionalContext || '',
   });
   const [sharkTank, setSharkTank] = useState(false);
@@ -25,6 +69,17 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const applyPreset = (preset) => {
+    setFormData({
+      name: preset.name,
+      description: preset.description,
+      industry: preset.industry,
+      targetAudience: preset.targetAudience,
+      revenueModel: preset.revenueModel,
+      additionalContext: 'Demo mode automated run',
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -38,162 +93,179 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
   const isValid = formData.name.trim() && formData.description.trim();
 
   return (
-    <div className="form-page">
-      <div className="form-container">
-        <div className="form-header">
-          <div className="landing-eyebrow" style={{ marginBottom: 'var(--space-md)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <AppIcon emoji="📋" size={16} /> Idea Submission
+    <div className="notion-form-page">
+      <div className="notion-form-wrapper">
+        
+        {/* Top Header */}
+        <div className="notion-header-group">
+          <div className="notion-eyebrow">
+            <AppIcon name="ceo" size={16} color="#60a5fa" />
+            <span>EXECUTIVE BRIEFING</span>
           </div>
-          <h1 className="title-xl">Describe Your Startup</h1>
-          <p className="text-lg" style={{ marginTop: 'var(--space-sm)' }}>
-            Tell us about your startup idea. The more detail, the better the board analysis.
-          </p>
+          <h1 className="notion-greeting-title">Good Evening, Founder.</h1>
+          <p className="notion-greeting-sub">What are we building today?</p>
+
+          {/* Quick Demo Mode Presets */}
+          <div className="demo-mode-bar">
+            <span className="demo-bar-label">⚡ Demo Presets:</span>
+            {DEMO_PRESETS.map((preset, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="demo-preset-btn"
+                onClick={() => applyPreset(preset)}
+              >
+                <AppIcon name={preset.iconName} size={14} />
+                <span>{preset.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {error && (
-          <div className="glass-card animate-fade-in" style={{
-            marginBottom: 'var(--space-lg)',
-            borderColor: 'rgba(220, 38, 38, 0.3)',
-            background: 'rgba(220, 38, 38, 0.08)',
-          }}>
-            <p style={{ color: 'var(--danger-hover)', fontSize: 'var(--font-sm)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <AppIcon emoji="⚠️" size={16} /> {error}
-            </p>
+          <div className="form-error-banner">
+            <AppIcon name="warning" size={16} color="#f87171" />
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="glass-card-lg">
-          <div className="form-grid">
-            {/* Startup Name */}
-            <div className="form-group">
-              <label className="form-label">Startup Name *</label>
-              <input
-                type="text"
-                name="name"
-                className="form-input"
-                placeholder="e.g., NeuraLink Health"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-            </div>
+        {/* Conversational Notion Form */}
+        <form onSubmit={handleSubmit} className="notion-card-form">
+          
+          {/* Startup Name */}
+          <div className="notion-field-group">
+            <label className="notion-label">Startup Name</label>
+            <input
+              type="text"
+              name="name"
+              className="notion-input-lg"
+              placeholder="e.g. VITALINK"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-            {/* Description */}
-            <div className="form-group">
-              <label className="form-label">Description *</label>
-              <textarea
-                name="description"
-                className="form-textarea"
-                placeholder="Describe your startup in detail. What problem does it solve? How does it work? What makes it unique?"
-                value={formData.description}
-                onChange={handleChange}
-                rows={5}
-                required
-                style={{ minHeight: '160px' }}
-              />
-              <span className="form-hint">Be as detailed as possible for better board analysis</span>
-            </div>
+          {/* Vision Description */}
+          <div className="notion-field-group">
+            <label className="notion-label">Describe your vision...</label>
+            <textarea
+              name="description"
+              className="notion-textarea"
+              placeholder="An app that gives ER doctors instant access to a patient's medical history, allergies, and diagnosis by scanning a QR code..."
+              value={formData.description}
+              onChange={handleChange}
+              rows={4}
+              required
+            />
+          </div>
 
-            {/* Industry & Revenue Model Row */}
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Industry</label>
+          {/* Select Row: Industry, Target Users, Revenue Model */}
+          <div className="notion-select-row">
+            
+            <div className="notion-select-group">
+              <label className="notion-label-sm">Industry</label>
+              <div className="notion-select-wrapper">
                 <select
                   name="industry"
-                  className="form-select"
+                  className="notion-select"
                   value={formData.industry}
                   onChange={handleChange}
                 >
-                  <option value="">Select Industry</option>
                   {INDUSTRIES.map(ind => (
                     <option key={ind} value={ind}>{ind}</option>
                   ))}
                 </select>
+                <AppIcon name="chevron" size={14} className="select-chevron" />
               </div>
+            </div>
 
-              <div className="form-group">
-                <label className="form-label">Revenue Model</label>
+            <div className="notion-select-group">
+              <label className="notion-label-sm">Target Users</label>
+              <div className="notion-select-wrapper">
+                <select
+                  name="targetAudience"
+                  className="notion-select"
+                  value={formData.targetAudience}
+                  onChange={handleChange}
+                >
+                  <option value="">Select Target Users</option>
+                  {TARGET_USERS.map(u => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+                <AppIcon name="chevron" size={14} className="select-chevron" />
+              </div>
+            </div>
+
+            <div className="notion-select-group">
+              <label className="notion-label-sm">Revenue Model</label>
+              <div className="notion-select-wrapper">
                 <select
                   name="revenueModel"
-                  className="form-select"
+                  className="notion-select"
                   value={formData.revenueModel}
                   onChange={handleChange}
                 >
-                  <option value="">Select Revenue Model</option>
-                  {REVENUE_MODELS.map(model => (
-                    <option key={model} value={model}>{model}</option>
+                  {REVENUE_MODELS.map(m => (
+                    <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
+                <AppIcon name="chevron" size={14} className="select-chevron" />
               </div>
             </div>
 
-            {/* Target Audience */}
-            <div className="form-group">
-              <label className="form-label">Target Audience</label>
-              <input
-                type="text"
-                name="targetAudience"
-                className="form-input"
-                placeholder="e.g., Small business owners aged 25-45"
-                value={formData.targetAudience}
-                onChange={handleChange}
-              />
-            </div>
+          </div>
 
-            {/* Extra Context */}
-            <div className="form-group">
-              <label className="form-label">Extra Context <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-              <textarea
-                name="additionalContext"
-                className="form-textarea"
-                placeholder="Any extra context: team background, traction, funding stage, competitors, etc."
-                value={formData.additionalContext}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
+          {/* Extra Context */}
+          <div className="notion-field-group">
+            <label className="notion-label-sm">Extra Context (Optional)</label>
+            <input
+              type="text"
+              name="additionalContext"
+              className="notion-input-sm"
+              placeholder="e.g. Pre-seed stage, 2 co-founders with medical experience..."
+              value={formData.additionalContext}
+              onChange={handleChange}
+            />
+          </div>
 
-            {/* Shark Tank Toggle */}
-            <div className={`shark-toggle-section ${sharkTank ? 'active' : ''}`}>
-              <div className="toggle-wrapper" onClick={() => setSharkTank(!sharkTank)}>
-                <div className={`toggle-track ${sharkTank ? 'active' : ''}`}>
-                  <div className="toggle-thumb" />
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 'var(--font-md)', fontWeight: 700, color: sharkTank ? 'var(--warning)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <AppIcon emoji="🦈" size={18} /> Shark Tank Mode
-                </div>
-                <div className="text-sm" style={{ marginTop: '2px' }}>
-                  Enable brutal honesty. No sugar-coating, maximum scrutiny.
-                </div>
-              </div>
+          {/* Brutal Scrutiny / Shark Tank Mode */}
+          <div className={`notion-toggle-row ${sharkTank ? 'active' : ''}`} onClick={() => setSharkTank(!sharkTank)}>
+            <div className="toggle-info">
+              <span className="toggle-heading">Shark Tank Mode (Brutal Scrutiny)</span>
+              <span className="toggle-sub">Enable aggressive cross-examination & zero mercy from Grim Reaper</span>
+            </div>
+            <div className={`notion-toggle-switch ${sharkTank ? 'on' : ''}`}>
+              <div className="toggle-knob" />
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="form-actions">
-            <button type="button" className="btn btn-ghost" onClick={onBack}>
-              ← Back
+          {/* Form Actions */}
+          <div className="notion-actions-row">
+            <button type="button" className="notion-btn-back" onClick={onBack}>
+              ← Back to Dashboard
             </button>
+
             <button
               type="submit"
-              className="btn btn-primary btn-lg btn-glow"
+              className="notion-btn-submit"
               disabled={!isValid || isSubmitting}
-              style={{ opacity: isValid && !isSubmitting ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
             >
               {isSubmitting ? (
                 <>
-                  <AppIcon emoji="⚡" size={16} className="animate-spin" />
-                  Initializing War Room...
+                  <AppIcon name="zap" size={18} className="animate-spin" />
+                  <span>INITIALIZING WAR ROOM...</span>
                 </>
               ) : (
                 <>
-                  <AppIcon emoji="🏛️" size={18} /> Convene the Board
+                  <AppIcon name="ceo" size={18} color="#000" />
+                  <span>Convene Board</span>
                 </>
               )}
             </button>
           </div>
+
         </form>
       </div>
     </div>
