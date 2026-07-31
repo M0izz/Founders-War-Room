@@ -50,9 +50,13 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// ── Start server ──────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n🏛️  Founder's War Room API listening on http://localhost:${PORT}`);
-  console.log(`   Health check → GET  /api/health`);
-  console.log(`   Analyze      → POST /api/analyze\n`);
-});
+// ── Export Express App for Serverless / Local ─────────────────────────
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n🏛️  Founder's War Room API listening on http://localhost:${PORT}`);
+    console.log(`   Health check → GET  /api/health`);
+    console.log(`   Analyze      → POST /api/analyze\n`);
+  });
+}

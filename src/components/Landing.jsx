@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import AppIcon from './AppIcon.jsx';
 
 const BOARD_MEMBERS = [
   {
@@ -23,7 +24,7 @@ const BOARD_MEMBERS = [
     id: 'marketing',
     name: 'Marketing',
     role: 'Growth Architect',
-    emoji: '🏛️',
+    emoji: '📢',
     color: '#A855F7',
     quote: 'Positioning lacks viral loop.',
     domain: 'Acquisition Channels & Positioning',
@@ -105,7 +106,7 @@ const SIMULATED_DEBATE = [
     speaker: 'Marketing',
     role: 'Growth Architect',
     color: '#A855F7',
-    emoji: '🏛️',
+    emoji: '📢',
     text: 'Positioning lacks viral loop. Pivot directly to enterprise distribution.',
   },
   {
@@ -124,7 +125,7 @@ const SIMULATED_DEBATE = [
   },
 ];
 
-export default function Landing({ onEnter }) {
+export default function Landing({ onEnter, onLogin, onConvene }) {
   const [activeMember, setActiveMember] = useState(FULL_BOARD[0]);
   const [demoStep, setDemoStep] = useState(0);
   const [isPlayingDemo, setIsPlayingDemo] = useState(true);
@@ -144,6 +145,9 @@ export default function Landing({ onEnter }) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  const handleLoginClick = onLogin || onEnter;
+  const handleConveneClick = onConvene || onEnter;
 
   return (
     <div className="cinematic-landing">
@@ -166,8 +170,8 @@ export default function Landing({ onEnter }) {
           </div>
 
           <div className="nav-actions">
-            <button className="btn-nav-login" onClick={onEnter}>Log in</button>
-            <button className="btn-nav-convene" onClick={onEnter}>Convene the Board</button>
+            <button className="btn-nav-login" onClick={handleLoginClick}>Log in</button>
+            <button className="btn-nav-convene" onClick={handleConveneClick}>Convene the Board</button>
           </div>
         </div>
       </nav>
@@ -198,8 +202,8 @@ export default function Landing({ onEnter }) {
           </p>
 
           <div className="hero-buttons-v2">
-            <button className="btn-hero-v2-primary" onClick={onEnter}>
-              <span className="btn-icon">🏛</span> ENTER THE WAR ROOM
+            <button className="btn-hero-v2-primary" onClick={handleConveneClick} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <span className="btn-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><AppIcon emoji="🏛" size={18} /></span> ENTER THE WAR ROOM
             </button>
             <button className="btn-hero-v2-secondary" onClick={() => scrollToSection('interactive-demo-section')}>
               <span className="btn-icon">▷</span> WATCH DEMO
@@ -212,7 +216,7 @@ export default function Landing({ onEnter }) {
           {/* CEO — Top Left */}
           <div className="hero-callout callout-ceo">
             <div className="callout-header header-ceo">
-              <span className="callout-icon">🏛</span>
+              <span className="callout-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><AppIcon emoji="🏛" size={16} color="#4F8CFF" /></span>
               <span className="callout-title">CEO</span>
             </div>
             <p className="callout-text">"The problem is real and the vision is compelling."</p>
@@ -222,7 +226,7 @@ export default function Landing({ onEnter }) {
           {/* CTO — Bottom Left */}
           <div className="hero-callout callout-cto">
             <div className="callout-header header-cto">
-              <span className="callout-icon">⚙️</span>
+              <span className="callout-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><AppIcon emoji="⚙️" size={16} color="#38BDF8" /></span>
               <span className="callout-title">CTO</span>
             </div>
             <p className="callout-text">"Technically feasible but MVP scope is too bloated."</p>
@@ -232,7 +236,7 @@ export default function Landing({ onEnter }) {
           {/* Marketing — Center Left */}
           <div className="hero-callout callout-marketing">
             <div className="callout-header header-marketing">
-              <span className="callout-icon">🏛</span>
+              <span className="callout-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><AppIcon emoji="📢" size={16} color="#A855F7" /></span>
               <span className="callout-title">MARKETING</span>
             </div>
             <p className="callout-text">"Positioning lacks viral loop."</p>
@@ -242,7 +246,7 @@ export default function Landing({ onEnter }) {
           {/* The Chairman — Center Head of Table */}
           <div className="hero-callout callout-chairman">
             <div className="callout-header header-chairman">
-              <span className="callout-icon">👑</span>
+              <span className="callout-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><AppIcon emoji="👑" size={16} color="#F5F5F5" /></span>
               <span className="callout-title">THE CHAIRMAN</span>
             </div>
             <p className="callout-text">"Let's hear every perspective."</p>
@@ -252,7 +256,7 @@ export default function Landing({ onEnter }) {
           {/* Investor — Top Right */}
           <div className="hero-callout callout-investor">
             <div className="callout-header header-investor">
-              <span className="callout-icon">💰</span>
+              <span className="callout-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><AppIcon emoji="💰" size={16} color="#FBBF24" /></span>
               <span className="callout-title">INVESTOR</span>
             </div>
             <p className="callout-text">"Revenue model is unclear. How do you scale?"</p>
@@ -262,7 +266,7 @@ export default function Landing({ onEnter }) {
           {/* Grim Reaper — Bottom Right */}
           <div className="hero-callout callout-reaper">
             <div className="callout-header header-reaper">
-              <span className="callout-icon">💀</span>
+              <span className="callout-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><AppIcon emoji="💀" size={16} color="#EF4444" /></span>
               <span className="callout-title">GRIM REAPER</span>
             </div>
             <p className="callout-text">"This dies in Year 2."</p>
@@ -281,7 +285,9 @@ export default function Landing({ onEnter }) {
           <div className="story-card alone-card">
             <div className="story-card-badge">THE OLD WAY</div>
             <div className="story-visual-alone">
-              <div className="founder-alone-icon">🧑‍💻</div>
+              <div className="founder-alone-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AppIcon emoji="🧑‍💻" size={32} color="#A855F7" />
+              </div>
               <div className="single-laptop-glow" />
             </div>
             <h3>Most founders build alone.</h3>
@@ -307,9 +313,9 @@ export default function Landing({ onEnter }) {
                   <span
                     key={i}
                     className="seat-dot"
-                    style={{ backgroundColor: m.color, boxShadow: `0 0 10px ${m.color}` }}
+                    style={{ backgroundColor: m.color, boxShadow: `0 2px 8px ${m.color}40`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    {m.emoji}
+                    <AppIcon emoji={m.emoji} size={18} color="#fff" />
                   </span>
                 ))}
               </div>
@@ -356,9 +362,14 @@ export default function Landing({ onEnter }) {
                     style={{
                       borderColor: member.color,
                       boxShadow: isSelected ? `0 0 25px ${member.color}60` : `0 0 10px ${member.color}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    <span className="member-emoji">{member.emoji}</span>
+                    <span className="member-emoji" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <AppIcon emoji={member.emoji} size={22} color={member.color} />
+                    </span>
                   </div>
                   <div className="member-name">{member.name}</div>
                   <div className="member-role">{member.role}</div>
@@ -378,9 +389,9 @@ export default function Landing({ onEnter }) {
             <div className="focus-header">
               <div
                 className="focus-avatar-large"
-                style={{ backgroundColor: `${activeMember.color}15`, border: `2px solid ${activeMember.color}` }}
+                style={{ backgroundColor: `${activeMember.color}15`, border: `2px solid ${activeMember.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                {activeMember.emoji}
+                <AppIcon emoji={activeMember.emoji} size={36} color={activeMember.color} />
               </div>
               <div>
                 <h3 className="focus-name" style={{ color: activeMember.color }}>
@@ -426,8 +437,10 @@ export default function Landing({ onEnter }) {
             { step: '06', title: 'Build MVP', desc: 'Launch with 0 blind spots', icon: '🚀' },
           ].map((item, idx) => (
             <div key={idx} className="timeline-node">
-              <div className="timeline-node-circle">
-                <span className="node-icon">{item.icon}</span>
+              <div className="timeline-node-circle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="node-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AppIcon emoji={item.icon} size={20} color="var(--primary)" />
+                </span>
                 <span className="node-step">{item.step}</span>
               </div>
               <h4 className="node-title">{item.title}</h4>
@@ -492,9 +505,12 @@ export default function Landing({ onEnter }) {
                     style={{
                       borderColor: item.color,
                       backgroundColor: `${item.color}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    {item.emoji}
+                    <AppIcon emoji={item.emoji} size={20} color={item.color} />
                   </div>
                   <div className="demo-message-content">
                     <div className="demo-speaker-header">
@@ -556,42 +572,42 @@ export default function Landing({ onEnter }) {
                 <td className="td-feature">Structure</td>
                 <td className="td-old">Single AI Model</td>
                 <td className="td-new highlighted-cell">
-                  <span>🏛️ 8 Executive C-Suite Agents</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AppIcon emoji="🏛️" size={16} /> 8 Executive C-Suite Agents</span>
                 </td>
               </tr>
               <tr>
                 <td className="td-feature">Perspective</td>
                 <td className="td-old">Single Agreeable Output</td>
                 <td className="td-new highlighted-cell">
-                  <span>⚔️ Multi-Agent Real-Time Debate</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AppIcon emoji="⚔️" size={16} /> Multi-Agent Real-Time Debate</span>
                 </td>
               </tr>
               <tr>
                 <td className="td-feature">Risk Analysis</td>
                 <td className="td-old">Generic Disclaimer</td>
                 <td className="td-new highlighted-cell">
-                  <span>💀 Grim Reaper Startup Autopsy</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AppIcon emoji="💀" size={16} /> Grim Reaper Startup Autopsy</span>
                 </td>
               </tr>
               <tr>
                 <td className="td-feature">Output Format</td>
                 <td className="td-old">Static Text Report</td>
                 <td className="td-new highlighted-cell">
-                  <span>🎬 Live Boardroom Meeting Experience</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AppIcon emoji="🎬" size={16} /> Live Boardroom Meeting Experience</span>
                 </td>
               </tr>
               <tr>
                 <td className="td-feature">Execution Plan</td>
                 <td className="td-old">Vague Bullet Points</td>
                 <td className="td-new highlighted-cell">
-                  <span>📈 Iterative Evolution Roadmap</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AppIcon emoji="📈" size={16} /> Iterative Evolution Roadmap</span>
                 </td>
               </tr>
               <tr>
                 <td className="td-feature">Session Feel</td>
                 <td className="td-old">Generic Chatbot Prompt</td>
                 <td className="td-new highlighted-cell">
-                  <span>🔥 High-Stakes Strategy Session</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AppIcon emoji="🔥" size={16} /> High-Stakes Strategy Session</span>
                 </td>
               </tr>
             </tbody>
@@ -647,7 +663,9 @@ export default function Landing({ onEnter }) {
           ].map((s, i) => (
             <div key={i} className="step-card">
               <div className="step-number">{s.num}</div>
-              <div className="step-icon">{s.icon}</div>
+              <div className="step-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AppIcon emoji={s.icon} size={28} color="var(--primary)" />
+              </div>
               <h3 className="step-title">{s.title}</h3>
               <p className="step-desc">{s.desc}</p>
             </div>
@@ -670,28 +688,28 @@ export default function Landing({ onEnter }) {
 
         <div className="capabilities-grid">
           <div className="capability-card glass-card">
-            <div className="cap-icon">⚔️</div>
+            <div className="cap-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AppIcon emoji="⚔️" size={28} color="var(--primary)" /></div>
             <h3>Cross Examination</h3>
             <div className="cap-divider" />
             <p>Agents challenge each other’s assumptions to spot contradictions before market launch.</p>
           </div>
 
           <div className="capability-card glass-card card-reaper">
-            <div className="cap-icon">💀</div>
+            <div className="cap-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AppIcon emoji="💀" size={28} color="var(--danger)" /></div>
             <h3>Failure Prediction</h3>
             <div className="cap-divider" />
             <p>The Grim Reaper identifies exact causes of death and hidden risks early.</p>
           </div>
 
           <div className="capability-card glass-card">
-            <div className="cap-icon">🎖️</div>
+            <div className="cap-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AppIcon emoji="🎖️" size={28} color="var(--warning)" /></div>
             <h3>Executive Verdict</h3>
             <div className="cap-divider" />
             <p>The Chairman delivers a definitive final decision, overall score, and strategic action plan.</p>
           </div>
 
           <div className="capability-card glass-card">
-            <div className="cap-icon">📈</div>
+            <div className="cap-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AppIcon emoji="📈" size={28} color="var(--success)" /></div>
             <h3>Evolution Timeline</h3>
             <p>Track every iteration and score change as your startup model refines.</p>
           </div>
@@ -706,7 +724,9 @@ export default function Landing({ onEnter }) {
         <div className="container final-cta-content">
           <div className="spotlight-chair-visual">
             <div className="spotlight-beam" />
-            <div className="chair-icon">🪑</div>
+            <div className="chair-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <AppIcon emoji="🪑" size={40} color="var(--primary)" />
+            </div>
           </div>
 
           <h2 className="final-cta-title">
@@ -717,8 +737,8 @@ export default function Landing({ onEnter }) {
             Take your seat at the head of the table. Put your startup through the ultimate test.
           </p>
 
-          <button className="btn-final-convene" onClick={onEnter}>
-            🏛 Start Your First Board Meeting
+          <button className="btn-final-convene" onClick={handleConveneClick} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <AppIcon emoji="🏛" size={18} /> Start Your First Board Meeting
           </button>
         </div>
       </section>

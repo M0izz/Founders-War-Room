@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AppIcon from './AppIcon.jsx';
 
 const INDUSTRIES = [
   'AI/ML', 'FinTech', 'HealthTech', 'EdTech', 'E-Commerce',
@@ -40,12 +41,12 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
     <div className="form-page">
       <div className="form-container">
         <div className="form-header">
-          <div className="landing-eyebrow" style={{ marginBottom: 'var(--space-md)' }}>
-            📋 Idea Submission
+          <div className="landing-eyebrow" style={{ marginBottom: 'var(--space-md)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <AppIcon emoji="📋" size={16} /> Idea Submission
           </div>
-          <h1 className="title-xl">Brief the War Room</h1>
+          <h1 className="title-xl">Describe Your Startup</h1>
           <p className="text-lg" style={{ marginTop: 'var(--space-sm)' }}>
-            Tell us about your startup idea. The more detail, the better the analysis.
+            Tell us about your startup idea. The more detail, the better the board analysis.
           </p>
         </div>
 
@@ -55,8 +56,8 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
             borderColor: 'rgba(220, 38, 38, 0.3)',
             background: 'rgba(220, 38, 38, 0.08)',
           }}>
-            <p style={{ color: 'var(--danger-hover)', fontSize: 'var(--font-sm)' }}>
-              ⚠️ {error}
+            <p style={{ color: 'var(--danger-hover)', fontSize: 'var(--font-sm)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <AppIcon emoji="⚠️" size={16} /> {error}
             </p>
           </div>
         )}
@@ -79,31 +80,18 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
 
             {/* Description */}
             <div className="form-group">
-              <label className="form-label">Startup Idea Description *</label>
+              <label className="form-label">Description *</label>
               <textarea
                 name="description"
                 className="form-textarea"
-                placeholder="Describe your startup idea in detail. What problem does it solve? How does it work? What makes it unique?"
+                placeholder="Describe your startup in detail. What problem does it solve? How does it work? What makes it unique?"
                 value={formData.description}
                 onChange={handleChange}
                 rows={5}
                 required
                 style={{ minHeight: '160px' }}
               />
-              <span className="form-hint">Be as detailed as possible for better analysis</span>
-            </div>
-
-            {/* Target Audience */}
-            <div className="form-group">
-              <label className="form-label">Target Audience</label>
-              <input
-                type="text"
-                name="targetAudience"
-                className="form-input"
-                placeholder="e.g., Small business owners aged 25-45"
-                value={formData.targetAudience}
-                onChange={handleChange}
-              />
+              <span className="form-hint">Be as detailed as possible for better board analysis</span>
             </div>
 
             {/* Industry & Revenue Model Row */}
@@ -139,13 +127,26 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
               </div>
             </div>
 
-            {/* Additional Context */}
+            {/* Target Audience */}
             <div className="form-group">
-              <label className="form-label">Additional Context <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+              <label className="form-label">Target Audience</label>
+              <input
+                type="text"
+                name="targetAudience"
+                className="form-input"
+                placeholder="e.g., Small business owners aged 25-45"
+                value={formData.targetAudience}
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Extra Context */}
+            <div className="form-group">
+              <label className="form-label">Extra Context <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
               <textarea
                 name="additionalContext"
                 className="form-textarea"
-                placeholder="Any additional context: team background, traction, funding stage, competitors, etc."
+                placeholder="Any extra context: team background, traction, funding stage, competitors, etc."
                 value={formData.additionalContext}
                 onChange={handleChange}
                 rows={3}
@@ -160,8 +161,8 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 'var(--font-md)', fontWeight: 700, color: sharkTank ? 'var(--warning)' : 'var(--text-primary)' }}>
-                  🦈 Shark Tank Mode
+                <div style={{ fontSize: 'var(--font-md)', fontWeight: 700, color: sharkTank ? 'var(--warning)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AppIcon emoji="🦈" size={18} /> Shark Tank Mode
                 </div>
                 <div className="text-sm" style={{ marginTop: '2px' }}>
                   Enable brutal honesty. No sugar-coating, maximum scrutiny.
@@ -179,15 +180,17 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
               type="submit"
               className="btn btn-primary btn-lg btn-glow"
               disabled={!isValid || isSubmitting}
-              style={{ opacity: isValid && !isSubmitting ? 1 : 0.5 }}
+              style={{ opacity: isValid && !isSubmitting ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
             >
               {isSubmitting ? (
                 <>
-                  <span className="animate-spin" style={{ display: 'inline-block' }}>⚡</span>
-                  Analyzing...
+                  <AppIcon emoji="⚡" size={16} className="animate-spin" />
+                  Initializing War Room...
                 </>
               ) : (
-                <>⚡ Begin War Room Session</>
+                <>
+                  <AppIcon emoji="🏛️" size={18} /> Convene the Board
+                </>
               )}
             </button>
           </div>

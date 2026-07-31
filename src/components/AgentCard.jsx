@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AppIcon from './AppIcon.jsx';
 
 const AGENT_CONFIG = {
   'CEO': { emoji: '👔', color: 'var(--agent-ceo)' },
@@ -58,8 +59,8 @@ export default function AgentCard({ agent, index = 0 }) {
     >
       {/* Header */}
       <div className="agent-card-header">
-        <div className="agent-avatar" style={{ borderColor: config.color + '33' }}>
-          {config.emoji}
+        <div className="agent-avatar" style={{ borderColor: config.color + '33', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <AppIcon emoji={config.emoji} size={22} color={config.color} />
         </div>
         <div className="agent-info">
           <div className="agent-name">{agent.agentName}</div>
@@ -139,7 +140,9 @@ export default function AgentCard({ agent, index = 0 }) {
           <div className="agent-expand-content animate-fade-in">
             {agent.strengths && agent.strengths.length > 0 && (
               <>
-                <div className="agent-list-label" style={{ color: 'var(--success)' }}>✅ Strengths</div>
+                <div className="agent-list-label" style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AppIcon emoji="✅" size={16} /> Strengths
+                </div>
                 <div className="agent-list">
                   {agent.strengths.map((s, i) => (
                     <div key={i} className="agent-list-item">{s}</div>
@@ -150,7 +153,9 @@ export default function AgentCard({ agent, index = 0 }) {
 
             {agent.concerns && agent.concerns.length > 0 && (
               <>
-                <div className="agent-list-label" style={{ color: 'var(--danger)' }}>⚠️ Concerns</div>
+                <div className="agent-list-label" style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AppIcon emoji="⚠️" size={16} /> Concerns
+                </div>
                 <div className="agent-list">
                   {agent.concerns.map((c, i) => (
                     <div key={i} className="agent-list-item">{c}</div>
@@ -161,7 +166,9 @@ export default function AgentCard({ agent, index = 0 }) {
 
             {agent.recommendations && agent.recommendations.length > 0 && (
               <>
-                <div className="agent-list-label" style={{ color: 'var(--primary)' }}>💡 Recommendations</div>
+                <div className="agent-list-label" style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AppIcon emoji="💡" size={16} /> Recommendations
+                </div>
                 <div className="agent-list">
                   {agent.recommendations.map((r, i) => (
                     <div key={i} className="agent-list-item">{r}</div>

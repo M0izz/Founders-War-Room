@@ -1,4 +1,5 @@
 import React from 'react';
+import AppIcon from './AppIcon.jsx';
 
 export default function CrossExamination({ data }) {
   if (!data) return null;
@@ -9,7 +10,7 @@ export default function CrossExamination({ data }) {
     <div className="cross-exam-section">
       <div style={{ marginBottom: 'var(--space-2xl)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
-          <span style={{ fontSize: '36px' }}>⚔️</span>
+          <span style={{ display: 'inline-flex' }}><AppIcon emoji="⚔️" size={36} color="var(--primary)" /></span>
           <div>
             <h2 className="title-lg">Cross-Examination</h2>
             <p className="text-sm">Agent debates and contradiction resolution</p>
@@ -74,9 +75,13 @@ export default function CrossExamination({ data }) {
               {/* Status */}
               <div className="contradiction-status">
                 {item.resolved ? (
-                  <span className="badge badge-success">✅ Resolved</span>
+                  <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <AppIcon emoji="✅" size={14} /> Resolved
+                  </span>
                 ) : (
-                  <span className="badge badge-danger">⚠️ Unresolved</span>
+                  <span className="badge badge-danger" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <AppIcon emoji="⚠️" size={14} /> Unresolved
+                  </span>
                 )}
               </div>
             </div>
@@ -84,8 +89,8 @@ export default function CrossExamination({ data }) {
         </div>
       ) : (
         <div className="glass-card" style={{ textAlign: 'center', padding: 'var(--space-2xl)' }}>
-          <p className="text-lg" style={{ color: 'var(--success)' }}>
-            ✅ No major contradictions found — agents are largely in agreement.
+          <p className="text-lg" style={{ color: 'var(--success)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <AppIcon emoji="✅" size={20} /> No major contradictions found — agents are largely in agreement.
           </p>
         </div>
       )}
@@ -93,8 +98,8 @@ export default function CrossExamination({ data }) {
       {/* Revised Scores */}
       {data.revisedScores && Object.keys(data.revisedScores).length > 0 && (
         <div className="glass-card" style={{ marginTop: 'var(--space-xl)' }}>
-          <h3 className="title-sm" style={{ marginBottom: 'var(--space-md)' }}>
-            📊 Revised Scores After Cross-Examination
+          <h3 className="title-sm" style={{ marginBottom: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AppIcon emoji="📊" size={18} /> Revised Scores After Cross-Examination
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-md)' }}>
             {Object.entries(data.revisedScores).map(([agent, score]) => (

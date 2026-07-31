@@ -1,4 +1,5 @@
 import React from 'react';
+import AppIcon from './AppIcon.jsx';
 
 export default function GrimReaper({ data }) {
   if (!data) return null;
@@ -7,7 +8,7 @@ export default function GrimReaper({ data }) {
     <div className="reaper-section glass-card-lg">
       {/* Header */}
       <div className="reaper-header">
-        <div className="reaper-icon">💀</div>
+        <div className="reaper-icon"><AppIcon emoji="💀" size={32} /></div>
         <div>
           <div className="reaper-title">Startup Autopsy</div>
           <div className="reaper-subtitle">The Grim Reaper's Analysis</div>
@@ -41,7 +42,7 @@ export default function GrimReaper({ data }) {
         {data.causeOfDeath && (
           <div className="reaper-card">
             <div className="reaper-card-title">
-              <span>⚰️</span> Cause of Death
+              <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }}><AppIcon emoji="⚰️" size={18} /></span> Cause of Death
             </div>
             {Array.isArray(data.causeOfDeath) ? (
               data.causeOfDeath.map((cause, i) => (
@@ -57,7 +58,7 @@ export default function GrimReaper({ data }) {
         {data.hiddenRisks && data.hiddenRisks.length > 0 && (
           <div className="reaper-card">
             <div className="reaper-card-title">
-              <span>🔍</span> Hidden Risks
+              <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }}><AppIcon emoji="🔍" size={18} /></span> Hidden Risks
             </div>
             {data.hiddenRisks.map((risk, i) => (
               <div key={i} className="reaper-list-item">{risk}</div>
@@ -69,7 +70,7 @@ export default function GrimReaper({ data }) {
         {data.earlyWarningSignals && data.earlyWarningSignals.length > 0 && (
           <div className="reaper-card">
             <div className="reaper-card-title">
-              <span>🚨</span> Early Warning Signals
+              <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }}><AppIcon emoji="🚨" size={18} /></span> Early Warning Signals
             </div>
             {data.earlyWarningSignals.map((signal, i) => (
               <div key={i} className="reaper-list-item">{signal}</div>
@@ -84,7 +85,7 @@ export default function GrimReaper({ data }) {
             borderColor: 'rgba(16, 185, 129, 0.15)',
           }}>
             <div className="reaper-card-title" style={{ color: 'var(--success-hover)' }}>
-              <span>🛡️</span> Survival Recommendations
+              <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }}><AppIcon emoji="🛡️" size={18} /></span> Survival Recommendations
             </div>
             {data.survivalRecommendations.map((rec, i) => (
               <div key={i} className="reaper-list-item reaper-survival-item">{rec}</div>

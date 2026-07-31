@@ -15,6 +15,9 @@ export async function analyzeIdea(ideaData, sharkTankMode = false) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 502) {
+        throw new Error('The War Room backend server is unreachable (502 Bad Gateway). Please ensure the backend is running on port 3001.');
+      }
       throw new Error(errorData.message || `Analysis failed with status ${response.status}`);
     }
 
