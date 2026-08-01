@@ -1,150 +1,304 @@
 import React, { useState } from 'react';
 import AppIcon from './AppIcon.jsx';
 
-const REPORT_TEMPLATES = [
+// Standardized Board Reports Database
+const DEFAULT_REPORTS_LIST = [
   {
-    id: 'exec-summary',
-    title: 'Executive Summary',
-    description: "High-level overview of the board's decision and key insights.",
-    category: 'Strategy',
-    iconName: 'history',
-    iconColor: '#c084fc',
-    bgGlow: 'rgba(192, 132, 252, 0.1)',
+    id: 'vitalink-v6',
+    name: 'VITALINK',
+    subtitle: 'FINAL BOARD REVIEW',
+    industry: 'HealthTech',
+    date: 'July 31, 2026',
+    session: 'Board Session #06',
+    score: 8.4,
+    scoreStatus: 'STRONG',
+    verdictStatus: 'APPROVED WITH CONDITIONS',
+    verdictQuote: 'VITALINK is ready for the next stage, provided the founder validates pricing and hospital adoption.',
+    tags: ['Monetization', 'GTM', 'Product', 'Risk'],
+    executiveSummary: 'The board believes VITALINK has strong emergency-healthcare potential, but monetization and hospital adoption remain the primary concerns before scaling.',
+    verdictGrid: [
+      { name: 'PRODUCT', status: 'Strong', level: '🟢', color: '#22c55e' },
+      { name: 'MARKET', status: 'Strong', level: '🟢', color: '#22c55e' },
+      { name: 'MONETIZATION', status: 'Needs Work', level: '🟡', color: '#f59e0b' },
+      { name: 'EXECUTION', status: 'Moderate', level: '🟡', color: '#f59e0b' },
+      { name: 'RISK', status: 'High', level: '🔴', color: '#f87171' },
+    ],
+    perspectives: [
+      {
+        role: 'CEO',
+        title: 'Marcus Vance (CEO)',
+        iconName: 'ceo',
+        color: '#3b82f6',
+        quote: '"The core proposition is compelling, but hospital partnerships need validation."',
+        verdict: 'Positive',
+        verdictIcon: '🟢',
+        verdictColor: '#22c55e',
+      },
+      {
+        role: 'INVESTOR',
+        title: 'Priya Desai (Investor)',
+        iconName: 'investor',
+        color: '#d97706',
+        quote: '"Revenue model remains insufficiently validated."',
+        verdict: 'Concern',
+        verdictIcon: '🟡',
+        verdictColor: '#f59e0b',
+      },
+      {
+        role: 'CTO',
+        title: 'Dr. Aris Thorne (CTO)',
+        iconName: 'cto',
+        color: '#0284c7',
+        quote: '"Architecture is solid, but HIPAA compliance & QR encryption need rigorous audit."',
+        verdict: 'Positive',
+        verdictIcon: '🟢',
+        verdictColor: '#22c55e',
+      },
+      {
+        role: 'CMO',
+        title: 'Elena Rostova (CMO)',
+        iconName: 'marketing',
+        color: '#7e22ce',
+        quote: '"B2C messaging resonates, but B2B hospital sales cycle is long."',
+        verdict: 'Concern',
+        verdictIcon: '🟡',
+        verdictColor: '#f59e0b',
+      },
+      {
+        role: 'CUSTOMER',
+        title: 'Samir Khan (Customer)',
+        iconName: 'customer',
+        color: '#15803d',
+        quote: '"Emergency doctors love immediate QR scanning without logins."',
+        verdict: 'Positive',
+        verdictIcon: '🟢',
+        verdictColor: '#22c55e',
+      },
+      {
+        role: 'RISK ADVISOR',
+        title: 'Dr. Quinn Hayes (Risk)',
+        iconName: 'risk',
+        color: '#c2410c',
+        quote: '"Data privacy liability in trauma cases requires legal coverage."',
+        verdict: 'High Risk',
+        verdictIcon: '🔴',
+        verdictColor: '#f87171',
+      },
+      {
+        role: 'DEVIL\'S ADVOCATE',
+        title: 'Grim Reaper (Devil\'s Advocate)',
+        iconName: 'reaper',
+        color: '#991b1b',
+        quote: '"If hospitals refuse API integration, this model dies in 6 months."',
+        verdict: 'High Risk',
+        verdictIcon: '🔴',
+        verdictColor: '#f87171',
+      },
+      {
+        role: 'CHAIRMAN',
+        title: 'Board Chair',
+        iconName: 'chairman',
+        color: '#b45309',
+        quote: '"Promising foundation. Proceed with strict hospital pilot criteria."',
+        verdict: 'Positive',
+        verdictIcon: '🟢',
+        verdictColor: '#22c55e',
+      },
+    ],
+    debates: [
+      {
+        agentA: 'CEO',
+        agentB: 'Investor',
+        quoteA: '"Hospital adoption should be our first priority."',
+        quoteB: '"Not until we prove willingness to pay."',
+        resolution: 'Validate willingness-to-pay with 10 hospitals before pursuing large-scale partnerships.',
+      },
+      {
+        agentA: 'CTO',
+        agentB: 'Grim Reaper',
+        quoteA: '"QR code generation requires zero backend latency."',
+        quoteB: '"Offline emergency access will fail if internet drops in ICU."',
+        resolution: 'Implement offline local encryption cache on mobile client.',
+      },
+    ],
+    keyFindings: [
+      { text: 'Strong emergency-use proposition', isPositive: true },
+      { text: 'Clear target customer identified', isPositive: true },
+      { text: 'QR-based workflow is differentiated', isPositive: true },
+      { text: 'Monetization strategy remains unclear', isPositive: false },
+      { text: 'Hospital onboarding may be difficult', isPositive: false },
+      { text: 'Regulatory considerations need investigation', isPositive: false },
+    ],
+    nextActions: [
+      {
+        id: 'act-1',
+        code: '01',
+        title: 'Validate pricing',
+        desc: 'Interview 10 hospital administrators',
+        priority: 'HIGH',
+      },
+      {
+        id: 'act-2',
+        code: '02',
+        title: 'Test QR workflow',
+        desc: 'Run 20 emergency-use simulations',
+        priority: 'HIGH',
+      },
+      {
+        id: 'act-3',
+        code: '03',
+        title: 'Research regulatory requirements',
+        desc: 'Identify applicable healthcare regulations',
+        priority: 'MEDIUM',
+      },
+    ],
+    scoreBreakdown: [
+      { category: 'Market', current: 8.9, previous: 8.1, trend: 'up' },
+      { category: 'Product', current: 8.6, previous: 8.2, trend: 'up' },
+      { category: 'Execution', current: 7.8, previous: 7.4, trend: 'up' },
+      { category: 'Financials', current: 7.1, previous: 6.8, trend: 'up' },
+      { category: 'Risk', current: 6.9, previous: 7.2, trend: 'down' },
+      { category: 'Team', current: 8.5, previous: 8.0, trend: 'up' },
+    ],
   },
   {
-    id: 'investor-report',
-    title: 'Investor Report',
-    description: 'Comprehensive report for potential investors and stakeholders.',
-    category: 'Financial',
-    iconName: 'investor',
-    iconColor: '#4ade80',
-    bgGlow: 'rgba(74, 222, 128, 0.1)',
+    id: 'vitalink-v5',
+    name: 'VITALINK',
+    subtitle: 'BOARD REVIEW V5',
+    industry: 'HealthTech',
+    date: 'July 28, 2026',
+    session: 'Board Session #05',
+    score: 7.8,
+    scoreStatus: 'MODERATE',
+    verdictStatus: 'NEEDS WORK',
+    verdictQuote: 'Product & MVP validation required before proceeding to commercialization.',
+    tags: ['MVP', 'Product', 'Technical'],
+    executiveSummary: 'The board evaluated VITALINK V5 focusing on product architecture and MVP readiness. Core technical workflows are sound.',
+    verdictGrid: [
+      { name: 'PRODUCT', status: 'Moderate', level: '🟡', color: '#f59e0b' },
+      { name: 'MARKET', status: 'Strong', level: '🟢', color: '#22c55e' },
+      { name: 'MONETIZATION', status: 'Needs Work', level: '🟡', color: '#f59e0b' },
+      { name: 'EXECUTION', status: 'Moderate', level: '🟡', color: '#f59e0b' },
+      { name: 'RISK', status: 'High', level: '🔴', color: '#f87171' },
+    ],
+    perspectives: [
+      {
+        role: 'CEO',
+        title: 'Marcus Vance (CEO)',
+        iconName: 'ceo',
+        color: '#3b82f6',
+        quote: '"MVP scope must stay tight for V5."',
+        verdict: 'Positive',
+        verdictIcon: '🟢',
+        verdictColor: '#22c55e',
+      },
+      {
+        role: 'INVESTOR',
+        title: 'Priya Desai (Investor)',
+        iconName: 'investor',
+        color: '#d97706',
+        quote: '"Focus on early customer retention metrics."',
+        verdict: 'Concern',
+        verdictIcon: '🟡',
+        verdictColor: '#f59e0b',
+      },
+    ],
+    debates: [
+      {
+        agentA: 'CEO',
+        agentB: 'Investor',
+        quoteA: '"We should launch MVP next month."',
+        quoteB: '"Not before 5 pilot agreements are signed."',
+        resolution: 'Secure 3 signed hospital pilot letters of intent prior to public launch.',
+      },
+    ],
+    keyFindings: [
+      { text: 'Core MVP feature set defined', isPositive: true },
+      { text: 'Hospital pilot terms require refinement', isPositive: false },
+    ],
+    nextActions: [
+      {
+        id: 'act-v5-1',
+        code: '01',
+        title: 'Finalize MVP specs',
+        desc: 'Lock feature freeze for V5 build',
+        priority: 'HIGH',
+      },
+    ],
+    scoreBreakdown: [
+      { category: 'Market', current: 8.1, previous: 7.8, trend: 'up' },
+      { category: 'Product', current: 8.2, previous: 7.8, trend: 'up' },
+      { category: 'Execution', current: 7.4, previous: 7.0, trend: 'up' },
+      { category: 'Financials', current: 6.8, previous: 6.5, trend: 'up' },
+      { category: 'Risk', current: 7.2, previous: 7.5, trend: 'down' },
+      { category: 'Team', current: 8.0, previous: 7.6, trend: 'up' },
+    ],
   },
   {
-    id: 'market-analysis',
-    title: 'Market Analysis',
-    description: 'In-depth market size, trends, and competitive landscape.',
-    category: 'Market',
-    iconName: 'activity',
-    iconColor: '#38bdf8',
-    bgGlow: 'rgba(56, 189, 248, 0.1)',
-  },
-  {
-    id: 'tech-feasibility',
-    title: 'Technical Feasibility',
-    description: 'Technical evaluation, architecture suggestions, and feasibility score.',
-    category: 'Technical',
-    iconName: 'cto',
-    iconColor: '#fb923c',
-    bgGlow: 'rgba(251, 146, 60, 0.1)',
-  },
-  {
-    id: 'risk-assessment',
-    title: 'Risk Assessment',
-    description: 'Detailed risk analysis with mitigation strategies and impact assessment.',
-    category: 'Risk',
-    iconName: 'risk',
-    iconColor: '#f87171',
-    bgGlow: 'rgba(248, 113, 113, 0.1)',
-  },
-  {
-    id: 'business-canvas',
-    title: 'Business Model Canvas',
-    description: 'Visual business model canvas with key components.',
-    category: 'Financial',
-    iconName: 'briefcase',
-    iconColor: '#2dd4bf',
-    bgGlow: 'rgba(45, 212, 191, 0.1)',
-  },
-  {
-    id: 'swot-analysis',
-    title: 'SWOT Analysis',
-    description: 'Strengths, weaknesses, opportunities, and threats breakdown.',
-    category: 'Strategy',
-    iconName: 'target',
-    iconColor: '#60a5fa',
-    bgGlow: 'rgba(96, 165, 250, 0.1)',
-  },
-  {
-    id: 'pitch-deck-summary',
-    title: 'Pitch Deck Summary',
-    description: 'Investor-ready pitch deck content and key speaking points.',
-    category: 'Financial',
-    iconName: 'history',
-    iconColor: '#c084fc',
-    bgGlow: 'rgba(192, 132, 252, 0.1)',
-  },
-  {
-    id: 'board-transcript',
-    title: 'Boardroom Transcript',
-    description: 'Complete conversation transcript from the boardroom meeting.',
-    category: 'Other',
-    iconName: 'ceo',
-    iconColor: '#fbbf24',
-    bgGlow: 'rgba(251, 191, 36, 0.1)',
-  },
-];
-
-const RECENT_REPORTS_LIST = [
-  {
-    title: 'Investor Report',
-    startup: 'VITALINK',
-    tagColor: '#38bdf8',
-    date: 'Jul 31, 2026 · 10:30 PM',
-    iconName: 'history',
-    iconColor: '#c084fc',
-  },
-  {
-    title: 'Executive Summary',
-    startup: 'VITALINK',
-    tagColor: '#38bdf8',
-    date: 'Jul 31, 2026 · 10:30 PM',
-    iconName: 'history',
-    iconColor: '#c084fc',
-  },
-  {
-    title: 'Market Analysis',
-    startup: 'VITALINK',
-    tagColor: '#38bdf8',
-    date: 'Jul 30, 2026 · 08:15 PM',
-    iconName: 'activity',
-    iconColor: '#38bdf8',
-  },
-  {
-    title: 'Risk Assessment',
-    startup: 'FoodAI',
-    tagColor: '#c084fc',
-    date: 'Jul 30, 2026 · 08:15 PM',
-    iconName: 'risk',
-    iconColor: '#f87171',
-  },
-  {
-    title: 'Technical Feasibility',
-    startup: 'EduBot',
-    tagColor: '#4ade80',
-    date: 'Jul 29, 2026 · 06:45 PM',
-    iconName: 'cto',
-    iconColor: '#4ade80',
+    id: 'medora-v1',
+    name: 'MEDORA',
+    subtitle: 'INITIAL BOARD REVIEW',
+    industry: 'BioTech',
+    date: 'July 20, 2026',
+    session: 'Board Session #01',
+    score: 7.9,
+    scoreStatus: 'STRONG',
+    verdictStatus: 'APPROVED WITH CONDITIONS',
+    verdictQuote: 'Promising diagnostic tech stack; regulatory clearance path must be mapped.',
+    tags: ['BioTech', 'Regulatory', 'R&D'],
+    executiveSummary: 'Medora presents an AI-driven blood diagnostic framework with strong initial laboratory trial scores.',
+    verdictGrid: [
+      { name: 'PRODUCT', status: 'Strong', level: '🟢', color: '#22c55e' },
+      { name: 'MARKET', status: 'Strong', level: '🟢', color: '#22c55e' },
+      { name: 'MONETIZATION', status: 'Moderate', level: '🟡', color: '#f59e0b' },
+      { name: 'EXECUTION', status: 'Needs Work', level: '🟡', color: '#f59e0b' },
+      { name: 'RISK', status: 'High', level: '🔴', color: '#f87171' },
+    ],
+    perspectives: [],
+    debates: [],
+    keyFindings: [
+      { text: 'Proprietary AI diagnostic accuracy', isPositive: true },
+      { text: 'FDA clinical trial timeline is 18 months', isPositive: false },
+    ],
+    nextActions: [
+      {
+        id: 'act-med-1',
+        code: '01',
+        title: 'Engage FDA consultant',
+        desc: 'Map Class II medical device approval pathway',
+        priority: 'HIGH',
+      },
+    ],
+    scoreBreakdown: [
+      { category: 'Market', current: 8.5, previous: 8.0, trend: 'up' },
+      { category: 'Product', current: 8.4, previous: 8.0, trend: 'up' },
+      { category: 'Execution', current: 7.2, previous: 7.0, trend: 'up' },
+      { category: 'Financials', current: 7.0, previous: 6.8, trend: 'up' },
+      { category: 'Risk', current: 7.5, previous: 7.8, trend: 'down' },
+      { category: 'Team', current: 8.2, previous: 7.9, trend: 'up' },
+    ],
   },
 ];
 
 export default function ReportsView({
   onNavigate,
   userName = 'Moiz',
+  history = [],
+  onOpenStartup,
+  onConveneBoard,
 }) {
-  const [activeCategory, setActiveCategory] = useState('All Reports');
-  const [openRecentMenu, setOpenRecentMenu] = useState(null);
+  // Navigation & Level State: null = Level 1 Landing, String ID = Level 2 Memo Detail
+  const [selectedReportId, setSelectedReportId] = useState(null);
 
-  const categories = ['All Reports', 'Strategy', 'Financial', 'Market', 'Technical', 'Risk', 'Other'];
+  // Search & Filter state for Level 1
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Approved', 'Needs Work'
+  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'score'
 
-  const filteredTemplates = activeCategory === 'All Reports'
-    ? REPORT_TEMPLATES
-    : REPORT_TEMPLATES.filter(t => t.category === activeCategory);
-
-  const handleGenerate = (template) => {
-    alert(`Generating ${template.title}... Executive report compiling.`);
-    window.print();
-  };
+  // Interactive Action States for Level 2
+  const [completedActions, setCompletedActions] = useState(new Set());
+  const [addedToMissionActions, setAddedToMissionActions] = useState(new Set());
+  const [toastMessage, setToastMessage] = useState(null);
 
   // Interactive Notifications state
   const [showNotifications, setShowNotifications] = useState(false);
@@ -154,13 +308,112 @@ export default function ReportsView({
     { id: 3, title: 'Roster Active', desc: 'All 8 Executive Board AI Agents are operational.', time: '3h ago', type: 'info' },
   ]);
 
+  // Combine default reports with dynamic history items if available
+  const allReports = [...DEFAULT_REPORTS_LIST];
+  if (history && history.length > 0) {
+    history.forEach((h, idx) => {
+      if (!allReports.find((r) => r.id === h.id)) {
+        allReports.unshift({
+          id: h.id || `hist-${idx}`,
+          name: h.ideaData?.name || 'MY STARTUP',
+          subtitle: 'BOARD REVIEW',
+          industry: h.ideaData?.industry || 'Tech',
+          date: 'Recent Session',
+          session: `Board Session #${history.length - idx}`,
+          score: h.overallScore || 8.0,
+          scoreStatus: (h.overallScore || 8.0) >= 8.0 ? 'STRONG' : 'MODERATE',
+          verdictStatus: (h.overallScore || 8.0) >= 8.0 ? 'APPROVED WITH CONDITIONS' : 'NEEDS WORK',
+          verdictQuote: h.analysisResult?.executiveSummary || 'Board completed review of strategic direction.',
+          tags: ['Strategy', 'GTM', 'Execution'],
+          executiveSummary: h.analysisResult?.executiveSummary || 'The board evaluated startup readiness across 8 key dimensions.',
+          verdictGrid: [
+            { name: 'PRODUCT', status: 'Strong', level: '🟢', color: '#22c55e' },
+            { name: 'MARKET', status: 'Strong', level: '🟢', color: '#22c55e' },
+            { name: 'MONETIZATION', status: 'Needs Work', level: '🟡', color: '#f59e0b' },
+            { name: 'EXECUTION', status: 'Moderate', level: '🟡', color: '#f59e0b' },
+            { name: 'RISK', status: 'Moderate', level: '🟡', color: '#f59e0b' },
+          ],
+          perspectives: h.analysisResult?.agentPerspectives || DEFAULT_REPORTS_LIST[0].perspectives,
+          debates: h.analysisResult?.debates || DEFAULT_REPORTS_LIST[0].debates,
+          keyFindings: DEFAULT_REPORTS_LIST[0].keyFindings,
+          nextActions: DEFAULT_REPORTS_LIST[0].nextActions,
+          scoreBreakdown: DEFAULT_REPORTS_LIST[0].scoreBreakdown,
+        });
+      }
+    });
+  }
+
+  // Filter Level 1 list
+  const filteredReports = allReports.filter((r) => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      r.name.toLowerCase().includes(q) ||
+      r.subtitle.toLowerCase().includes(q) ||
+      r.industry.toLowerCase().includes(q) ||
+      r.tags.some((t) => t.toLowerCase().includes(q));
+
+    const matchesStatus =
+      statusFilter === 'All' ||
+      (statusFilter === 'Approved' && r.verdictStatus.includes('APPROVED')) ||
+      (statusFilter === 'Needs Work' && r.verdictStatus.includes('NEEDS WORK'));
+
+    return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    if (sortBy === 'score') return b.score - a.score;
+    return 0; // default newest
+  });
+
+  const selectedReport = allReports.find((r) => r.id === selectedReportId) || allReports[0];
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const toggleActionComplete = (actionId) => {
+    setCompletedActions((prev) => {
+      const next = new Set(prev);
+      if (next.has(actionId)) next.delete(actionId);
+      else next.add(actionId);
+      return next;
+    });
+  };
+
+  const handleAddToMission = (action) => {
+    setAddedToMissionActions((prev) => new Set(prev).add(action.id));
+    showToast(`Added "${action.title}" to Mission & Evolution tracker!`);
+  };
+
   return (
-    <div className="v2-dashboard-page" onClick={() => setOpenRecentMenu(null)}>
+    <div className="v2-dashboard-page">
       {/* Background Grid & Glow */}
       <div className="v2-bg-grid" />
       <div className="v2-bg-ambient-glow" />
 
-      {/* Header */}
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: 'rgba(34, 197, 94, 0.95)',
+          color: '#ffffff',
+          padding: '12px 20px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          fontWeight: 800,
+          fontSize: '0.88rem',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span>✓</span> {toastMessage}
+        </div>
+      )}
+
+      {/* Navigation Header */}
       <header className="v2-header">
         <div className="v2-header-brand" onClick={() => onNavigate && onNavigate('landing')}>
           <img src="/war_room_logo.png" alt="War Room Crest" className="v2-header-logo-img" />
@@ -257,7 +510,7 @@ export default function ReportsView({
               <span>Dashboard</span>
             </button>
 
-            <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('form')}>
+            <button className="v2-nav-item" onClick={() => onConveneBoard && onConveneBoard()}>
               <span className="nav-item-icon"><AppIcon name="build" size={18} /></span>
               <span>New Startup</span>
             </button>
@@ -272,7 +525,7 @@ export default function ReportsView({
               <span>Evolution</span>
             </button>
 
-            <button className="v2-nav-item active" onClick={() => onNavigate && onNavigate('reports')}>
+            <button className="v2-nav-item active" onClick={() => setSelectedReportId(null)}>
               <span className="nav-item-icon"><AppIcon name="history" size={18} color="#f59e0b" /></span>
               <span style={{ color: '#f59e0b', fontWeight: 800 }}>Reports</span>
             </button>
@@ -308,194 +561,612 @@ export default function ReportsView({
           </div>
         </aside>
 
-        {/* Main Content Workspace Grid */}
+        {/* Main Content Area */}
         <main className="v2-main-content" style={{ maxWidth: '1440px' }}>
-          <div className="reports-exact-grid">
-
-            {/* Left Area: Reports Templates Grid */}
-            <div className="reports-templates-column">
-              
+          
+          {/* LEVEL 1: REPORTS LANDING PAGE */}
+          {selectedReportId === null && (
+            <div>
               {/* Header Title Row */}
-              <div className="reports-title-row">
-                <div>
-                  <h1 className="reports-main-heading">Reports</h1>
-                  <p className="reports-subtext">Generate professional reports and documents from your boardroom analyses.</p>
+              <div style={{ marginBottom: '24px' }}>
+                <h1 className="settings-main-heading">REPORTS</h1>
+                <p className="settings-subtext">Your board's analysis, decisions, and recommendations</p>
+              </div>
+
+              {/* Search & Filter Bar */}
+              <div className="glass-panel" style={{
+                padding: '14px 20px',
+                borderRadius: '16px',
+                marginBottom: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                background: 'rgba(13, 21, 41, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+              }}>
+                <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <AppIcon name="history" size={16} color="#94a3b8" style={{ position: 'absolute', left: '14px' }} />
+                  <input
+                    type="text"
+                    placeholder="Search reports..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px 10px 40px',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      color: '#ffffff',
+                      fontSize: '0.88rem',
+                      outline: 'none'
+                    }}
+                  />
                 </div>
 
-                <button className="btn-generate-new-report-glowing" onClick={() => alert('Select a report template below to generate.')}>
-                  <span>+</span> Generate New Report &gt;
-                </button>
+                <select
+                  className="settings-select"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={{ width: '150px' }}
+                >
+                  <option value="All">Filter: All</option>
+                  <option value="Approved">Filter: Approved</option>
+                  <option value="Needs Work">Filter: Needs Work</option>
+                </select>
+
+                <select
+                  className="settings-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{ width: '160px' }}
+                >
+                  <option value="newest">Sort: Newest</option>
+                  <option value="score">Sort: Highest Score</option>
+                </select>
               </div>
 
-              {/* Category Filter Tabs */}
-              <div className="reports-category-tabs">
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    className={`reports-cat-tab ${activeCategory === cat ? 'active' : ''}`}
-                    onClick={() => setActiveCategory(cat)}
-                  >
-                    {cat === 'All Reports' && <AppIcon name="history" size={14} style={{ marginRight: '6px' }} />}
-                    {cat}
-                  </button>
-                ))}
-              </div>
+              {/* Section Subheading */}
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#ffffff', marginBottom: '16px', tracking: '0.5px' }}>
+                RECENT REPORTS
+              </h2>
 
-              {/* Report Templates Section Subtitle */}
-              <h3 className="templates-section-subtitle">Report Templates</h3>
-
-              {/* 3x3 Grid of Report Templates */}
-              <div className="report-templates-grid">
-                {filteredTemplates.map((template) => (
-                  <div key={template.id} className="report-template-card glass-panel">
-                    <div className="template-card-top">
-                      <div className="template-icon-box" style={{ backgroundColor: template.bgGlow }}>
-                        <AppIcon name={template.iconName} size={22} color={template.iconColor} />
-                      </div>
-                      <div className="template-title-stack">
-                        <h4 className="template-card-title">{template.title}</h4>
-                        <p className="template-card-desc">{template.description}</p>
-                      </div>
-                    </div>
-
-                    <button className="template-generate-btn" onClick={() => handleGenerate(template)}>
-                      Generate Report &rarr;
-                    </button>
+              {/* Report List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {filteredReports.length === 0 ? (
+                  <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                    No reports match your search query.
                   </div>
-                ))}
-              </div>
-
-            </div>
-
-            {/* Right Side Column: Reports Overview & Recent Reports */}
-            <div className="reports-overview-column">
-
-              {/* Reports Overview Panel */}
-              <div className="reports-overview-card glass-panel">
-                <h3 className="overview-heading">Reports Overview</h3>
-
-                <div className="overview-stats-2x2">
-                  {/* Total Reports */}
-                  <div className="overview-stat-box">
-                    <div className="stat-top-row">
-                      <span className="stat-lbl-gray">Total Reports</span>
-                      <AppIcon name="history" size={16} color="#60a5fa" />
-                    </div>
-                    <span className="stat-num-big">28</span>
-                    <span className="stat-sub-txt">Across all missions</span>
-                  </div>
-
-                  {/* This Month */}
-                  <div className="overview-stat-box">
-                    <div className="stat-top-row">
-                      <span className="stat-lbl-gray">This Month</span>
-                      <AppIcon name="activity" size={16} color="#4ade80" />
-                    </div>
-                    <span className="stat-num-big">12</span>
-                    <span className="stat-sub-txt">Reports generated</span>
-                  </div>
-
-                  {/* Most Used */}
-                  <div className="overview-stat-box">
-                    <div className="stat-top-row">
-                      <span className="stat-lbl-gray">Most Used</span>
-                      <AppIcon name="crown" size={16} color="#c084fc" />
-                    </div>
-                    <span className="stat-text-bold">Investor Report</span>
-                    <span className="stat-sub-txt">Used 8 times</span>
-                  </div>
-
-                  {/* Avg Quality */}
-                  <div className="overview-stat-box">
-                    <div className="stat-top-row">
-                      <span className="stat-lbl-gray">Avg. Quality</span>
-                      <AppIcon name="target" size={16} color="#fbbf24" />
-                    </div>
-                    <div className="stat-score-inline">
-                      <span className="stat-score-num">8.4</span>
-                      <span className="stat-score-denom">/10</span>
-                    </div>
-                    <span className="stat-sub-txt">Board satisfaction</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Reports Panel */}
-              <div className="recent-reports-card glass-panel">
-                <div className="recent-reports-header">
-                  <h3 className="overview-heading">Recent Reports</h3>
-                  <button className="view-all-link-btn" onClick={() => setActiveCategory('All Reports')}>
-                    View All
-                  </button>
-                </div>
-
-                <div className="recent-reports-list">
-                  {RECENT_REPORTS_LIST.map((item, idx) => (
-                    <div key={idx} className="recent-report-row">
-                      <div className="recent-left-info">
-                        <div className="recent-icon-badge" style={{ backgroundColor: `${item.iconColor}22` }}>
-                          <AppIcon name={item.iconName} size={16} color={item.iconColor} />
+                ) : (
+                  filteredReports.map((report) => (
+                    <div
+                      key={report.id}
+                      className="glass-panel"
+                      style={{
+                        padding: '20px 24px',
+                        borderRadius: '18px',
+                        background: 'rgba(13, 21, 41, 0.85)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        display: 'flex',
+                        justify: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {/* Left Information */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                          <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#ffffff' }}>
+                            {report.name}
+                          </h3>
+                          <span style={{
+                            padding: '3px 10px',
+                            background: 'rgba(56, 189, 248, 0.12)',
+                            border: '1px solid rgba(56, 189, 248, 0.3)',
+                            borderRadius: '8px',
+                            color: '#38bdf8',
+                            fontSize: '0.75rem',
+                            fontWeight: 800
+                          }}>
+                            {report.industry}
+                          </span>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.5px' }}>
+                            {report.subtitle}
+                          </span>
                         </div>
-                        <div className="recent-text-stack">
-                          <div className="recent-title-line">
-                            <span className="recent-item-title">{item.title}</span>
-                            <span className="recent-startup-tag" style={{ color: item.tagColor, background: `${item.tagColor}1a` }}>
-                              {item.startup}
+
+                        <div style={{ fontSize: '0.84rem', color: '#64748b', marginBottom: '12px' }}>
+                          {report.date} • {report.session}
+                        </div>
+
+                        {/* Tags */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {report.tags.map((tag, i) => (
+                            <span key={i} style={{
+                              fontSize: '0.76rem',
+                              color: '#cbd5e1',
+                              background: 'rgba(255, 255, 255, 0.04)',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(255, 255, 255, 0.06)'
+                            }}>
+                              • {tag}
                             </span>
-                          </div>
-                          <span className="recent-item-date">{item.date}</span>
+                          ))}
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="recent-action-btns">
-                        <button className="row-action-icon-btn" title="Download" onClick={() => window.print()}>
-                          <AppIcon name="history" size={14} color="#94a3b8" />
-                        </button>
-                        <button className="row-action-icon-btn" title="View" onClick={() => onNavigate && onNavigate('boardroom')}>
-                          <AppIcon name="analyzing" size={14} color="#94a3b8" />
-                        </button>
-                        <button
-                          className="row-action-icon-btn"
-                          title="Options"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenRecentMenu(openRecentMenu === idx ? null : idx);
-                          }}
-                        >
-                          ⋮
-                        </button>
-
-                        {openRecentMenu === idx && (
-                          <div className="recent-options-menu-popup glass-panel" onClick={(e) => e.stopPropagation()}>
-                            <button className="recent-menu-option" onClick={() => { setOpenRecentMenu(null); window.print(); }}>
-                              📥 Download PDF
-                            </button>
-                            <button className="recent-menu-option" onClick={() => { setOpenRecentMenu(null); onNavigate && onNavigate('boardroom'); }}>
-                              👁️ View Meeting
-                            </button>
-                            <button className="recent-menu-option delete-option" onClick={() => { setOpenRecentMenu(null); alert('Deleted report'); }}>
-                              🗑️ Delete Report
-                            </button>
+                      {/* Right Score & View Button */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+                        <div style={{ textAlign: 'right', minWidth: '130px' }}>
+                          <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 800, marginBottom: '2px' }}>
+                            Board Score
                           </div>
-                        )}
+                          <div style={{ fontSize: '1.25rem', fontWeight: 900, color: report.score >= 8.0 ? '#4ade80' : '#fbbf24' }}>
+                            {report.score} <span style={{ fontSize: '0.85rem', color: '#64748b' }}>/ 10</span>
+                          </div>
+                          <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', marginTop: '6px', overflow: 'hidden' }}>
+                            <div style={{
+                              width: `${(report.score / 10) * 100}%`,
+                              height: '100%',
+                              background: report.score >= 8.0 ? 'linear-gradient(90deg, #4ade80, #38bdf8)' : 'linear-gradient(90deg, #fbbf24, #f87171)',
+                              borderRadius: '10px'
+                            }} />
+                          </div>
+                        </div>
+
+                        <button
+                          className="btn-view-evolution"
+                          onClick={() => setSelectedReportId(report.id)}
+                          style={{ padding: '10px 20px', fontSize: '0.88rem', fontWeight: 800 }}
+                        >
+                          View Report →
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* LEVEL 2: DETAILED STARTUP BOARD MEMO VIEW */}
+          {selectedReportId !== null && selectedReport && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* Back Header & Title Banner */}
+              <div className="glass-panel" style={{
+                padding: '24px 28px',
+                borderRadius: '20px',
+                background: 'rgba(13, 21, 41, 0.9)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                justify: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <button
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#38bdf8',
+                      fontSize: '0.86rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      marginBottom: '12px',
+                      padding: 0
+                    }}
+                    onClick={() => setSelectedReportId(null)}
+                  >
+                    ← Back to Reports
+                  </button>
+
+                  <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.5px' }}>
+                    {selectedReport.name}
+                  </h1>
+                  <h3 style={{ margin: '4px 0 6px 0', fontSize: '1.1rem', color: '#c084fc', fontWeight: 800 }}>
+                    {selectedReport.subtitle}
+                  </h3>
+                  <div style={{ fontSize: '0.86rem', color: '#94a3b8', fontWeight: 500 }}>
+                    {selectedReport.date} • {selectedReport.session}
+                  </div>
+                </div>
+
+                {/* Score Big Badge */}
+                <div style={{
+                  padding: '16px 28px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24', lineHeight: 1 }}>
+                    {selectedReport.score} <span style={{ fontSize: '1.1rem', color: '#64748b' }}>/ 10</span>
+                  </div>
+                  <div style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 900,
+                    color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24',
+                    letterSpacing: '1px',
+                    marginTop: '4px'
+                  }}>
+                    {selectedReport.scoreStatus}
+                  </div>
+                </div>
+              </div>
+
+              {/* 1. EXECUTIVE SUMMARY & BOARD VERDICT GRID */}
+              <div className="glass-panel" style={{
+                padding: '24px 28px',
+                borderRadius: '20px',
+                background: 'rgba(13, 21, 41, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+              }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                  Executive Summary
+                </h3>
+                <p style={{ margin: '0 0 24px 0', fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+                  {selectedReport.executiveSummary}
+                </p>
+
+                <h4 style={{ margin: '0 0 14px 0', fontSize: '0.85rem', fontWeight: 900, color: '#94a3b8', letterSpacing: '1px' }}>
+                  BOARD VERDICT
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  {selectedReport.verdictGrid.map((item, idx) => (
+                    <div key={idx} style={{
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      display: 'flex',
+                      justify: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#e2e8f0' }}>
+                        {item.level} {item.name}
+                      </span>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 900, color: item.color }}>
+                        {item.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. BOARD PERSPECTIVES (THE 8 AGENTS) */}
+              <div className="glass-panel" style={{
+                padding: '24px 28px',
+                borderRadius: '20px',
+                background: 'rgba(13, 21, 41, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+              }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                  BOARD PERSPECTIVES
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  {selectedReport.perspectives.map((agent, i) => (
+                    <div key={i} style={{
+                      padding: '16px 18px',
+                      borderRadius: '14px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justify: 'space-between',
+                      gap: '12px'
+                    }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <AppIcon name={agent.iconName} size={18} color={agent.color} />
+                          <span style={{ fontWeight: 900, fontSize: '0.88rem', color: '#ffffff' }}>
+                            {agent.title}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', lineHeight: '1.5' }}>
+                          {agent.quote}
+                        </p>
+                      </div>
+
+                      <div style={{
+                        display: 'flex',
+                        justify: 'space-between',
+                        alignItems: 'center',
+                        paddingTop: '8px',
+                        borderTop: '1px solid rgba(255, 255, 255, 0.04)'
+                      }}>
+                        <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700 }}>Verdict:</span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 900, color: agent.verdictColor }}>
+                          {agent.verdictIcon} {agent.verdict}
+                        </span>
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
 
-                {/* Bottom Full-Width Export All Reports Button */}
-                <div className="export-all-wrapper">
-                  <button className="btn-export-all-reports" onClick={() => alert('Downloading all boardroom reports as ZIP archive...')}>
-                    <AppIcon name="history" size={16} /> Export All Reports
+              {/* 3. BOARD DEBATE / DISAGREEMENTS */}
+              {selectedReport.debates && selectedReport.debates.length > 0 && (
+                <div className="glass-panel" style={{
+                  padding: '24px 28px',
+                  borderRadius: '20px',
+                  background: 'rgba(13, 21, 41, 0.85)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                    BOARD DEBATE & DISAGREEMENTS
+                  </h3>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {selectedReport.debates.map((d, idx) => (
+                      <div key={idx} style={{
+                        padding: '18px 20px',
+                        borderRadius: '14px',
+                        background: 'rgba(244, 63, 94, 0.03)',
+                        border: '1px solid rgba(244, 63, 94, 0.15)'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '1.1rem' }}>⚡</span>
+                          <span style={{ fontWeight: 900, fontSize: '0.92rem', color: '#f43f5e' }}>
+                            {d.agentA} vs {d.agentB}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '14px' }}>
+                          <div style={{ padding: '10px 14px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38bdf8', marginBottom: '4px' }}>{d.agentA}:</div>
+                            <div style={{ fontSize: '0.85rem', color: '#cbd5e1', fontStyle: 'italic' }}>{d.quoteA}</div>
+                          </div>
+                          <div style={{ padding: '10px 14px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fbbf24', marginBottom: '4px' }}>{d.agentB}:</div>
+                            <div style={{ fontSize: '0.85rem', color: '#cbd5e1', fontStyle: 'italic' }}>{d.quoteB}</div>
+                          </div>
+                        </div>
+
+                        <div style={{
+                          padding: '10px 14px',
+                          background: 'rgba(56, 189, 248, 0.08)',
+                          borderRadius: '10px',
+                          borderLeft: '3px solid #38bdf8'
+                        }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#38bdf8', letterSpacing: '0.5px' }}>
+                            CHAIRMAN'S RESOLUTION:
+                          </span>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: '#ffffff', fontWeight: 700 }}>
+                            {d.resolution}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. KEY FINDINGS */}
+              <div className="glass-panel" style={{
+                padding: '24px 28px',
+                borderRadius: '20px',
+                background: 'rgba(13, 21, 41, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+              }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                  KEY FINDINGS
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+                  {selectedReport.keyFindings.map((item, i) => (
+                    <div key={i} style={{
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      background: item.isPositive ? 'rgba(34, 197, 94, 0.04)' : 'rgba(251, 146, 60, 0.04)',
+                      border: item.isPositive ? '1px solid rgba(34, 197, 94, 0.15)' : '1px solid rgba(251, 146, 60, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}>
+                      <span style={{ color: item.isPositive ? '#4ade80' : '#fb923c', fontWeight: 900, fontSize: '1.1rem' }}>
+                        {item.isPositive ? '✓' : '⚠'}
+                      </span>
+                      <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 600 }}>
+                        {item.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 5. RECOMMENDED ACTIONS (NEXT ACTIONS) */}
+              <div className="glass-panel" style={{
+                padding: '24px 28px',
+                borderRadius: '20px',
+                background: 'rgba(13, 21, 41, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+              }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                  NEXT ACTIONS
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {selectedReport.nextActions.map((action) => {
+                    const isDone = completedActions.has(action.id);
+                    const isAdded = addedToMissionActions.has(action.id);
+
+                    return (
+                      <div key={action.id} style={{
+                        padding: '16px 20px',
+                        borderRadius: '14px',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        display: 'flex',
+                        justify: 'space-between',
+                        alignItems: 'center',
+                        opacity: isDone ? 0.5 : 1,
+                        transition: 'all 0.2s ease'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#c084fc', width: '28px' }}>
+                            {action.code}
+                          </span>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', textDecoration: isDone ? 'line-through' : 'none' }}>
+                                {action.title}
+                              </h4>
+                              <span style={{
+                                padding: '1px 7px',
+                                background: action.priority === 'HIGH' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(251, 191, 36, 0.2)',
+                                border: action.priority === 'HIGH' ? '1px solid #f87171' : '1px solid #fbbf24',
+                                borderRadius: '6px',
+                                color: action.priority === 'HIGH' ? '#f87171' : '#fbbf24',
+                                fontSize: '0.72rem',
+                                fontWeight: 800
+                              }}>
+                                {action.priority}
+                              </span>
+                            </div>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: '#94a3b8' }}>
+                              {action.desc}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button
+                            onClick={() => toggleActionComplete(action.id)}
+                            style={{
+                              padding: '6px 14px',
+                              background: isDone ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                              border: isDone ? '1px solid #4ade80' : '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '8px',
+                              color: isDone ? '#4ade80' : '#cbd5e1',
+                              fontSize: '0.8rem',
+                              fontWeight: 800,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {isDone ? '✓ Completed' : 'Mark Complete'}
+                          </button>
+
+                          <button
+                            onClick={() => handleAddToMission(action)}
+                            disabled={isAdded}
+                            style={{
+                              padding: '6px 14px',
+                              background: isAdded ? 'rgba(192, 132, 252, 0.2)' : 'linear-gradient(135deg, #a855f7, #6366f1)',
+                              border: isAdded ? '1px solid #c084fc' : 'none',
+                              borderRadius: '8px',
+                              color: '#ffffff',
+                              fontSize: '0.8rem',
+                              fontWeight: 800,
+                              cursor: isAdded ? 'default' : 'pointer'
+                            }}
+                          >
+                            {isAdded ? '✓ Added to Mission' : 'Add to Mission'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 6. BOARD SCORE BREAKDOWN */}
+              <div className="glass-panel" style={{
+                padding: '24px 28px',
+                borderRadius: '20px',
+                background: 'rgba(13, 21, 41, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+              }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                  BOARD SCORE BREAKDOWN
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  {selectedReport.scoreBreakdown.map((s, idx) => (
+                    <div key={idx} style={{
+                      padding: '14px 16px',
+                      borderRadius: '12px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      display: 'flex',
+                      justify: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#94a3b8' }}>
+                          {s.category}
+                        </div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff', marginTop: '2px' }}>
+                          {s.current} <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>prev {s.previous}</span>
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: '1rem',
+                        fontWeight: 900,
+                        color: s.trend === 'up' ? '#4ade80' : '#f87171'
+                      }}>
+                        {s.trend === 'up' ? '↑' : '↓'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 7. BOARD DECISION CALLOUT */}
+              <div className="glass-panel" style={{
+                padding: '28px 32px',
+                borderRadius: '20px',
+                background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.4) 0%, rgba(13, 21, 41, 0.95) 100%)',
+                border: '1px solid rgba(96, 165, 250, 0.3)',
+                textAlign: 'center',
+                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)'
+              }}>
+                <h2 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 900, color: '#60a5fa', letterSpacing: '0.5px' }}>
+                  {selectedReport.verdictStatus}
+                </h2>
+                <p style={{ margin: '0 auto 24px auto', maxWidth: '640px', fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+                  "{selectedReport.verdictQuote}"
+                </p>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+                  <button
+                    className="btn-view-evolution"
+                    onClick={() => {
+                      if (onConveneBoard) onConveneBoard();
+                      else if (onNavigate) onNavigate('form');
+                    }}
+                    style={{ padding: '12px 28px', fontSize: '0.92rem', fontWeight: 900 }}
+                  >
+                    Start Next Mission
                   </button>
-                  <span className="export-all-subtext">Download all reports as ZIP</span>
+
+                  <button
+                    onClick={() => showToast('Report exported as Executive Board Memo (PDF)!')}
+                    style={{
+                      padding: '12px 24px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: '12px',
+                      color: '#ffffff',
+                      fontSize: '0.92rem',
+                      fontWeight: 800,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Export Report
+                  </button>
                 </div>
               </div>
 
             </div>
+          )}
 
-          </div>
         </main>
       </div>
     </div>

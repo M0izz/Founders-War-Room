@@ -186,6 +186,9 @@ export default function App() {
         <ReportsView
           onNavigate={handleNavigate}
           userName="Moiz"
+          history={historyList}
+          onOpenStartup={handleOpenStartup}
+          onConveneBoard={handleConveneBoard}
         />
       )}
 
