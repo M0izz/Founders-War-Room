@@ -283,16 +283,20 @@ export default function BoardroomScene({
 
             {/* Center Radial Canvas */}
             <div className="wr-radial-canvas">
-              {/* SVG Dotted Connection Lines */}
+              {/* SVG Dotted Connection Lines & Orbit Ellipse */}
               <svg className="wr-svg-lines" viewBox="0 0 800 560">
-                <line x1="400" y1="280" x2="400" y2="50" stroke="rgba(245, 158, 11, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="280" x2="150" y2="125" stroke="rgba(59, 130, 246, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="280" x2="650" y2="125" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="280" x2="110" y2="245" stroke="rgba(192, 132, 252, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="280" x2="690" y2="245" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="280" x2="150" y2="365" stroke="rgba(74, 222, 128, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="280" x2="650" y2="365" stroke="rgba(251, 146, 60, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="280" x2="400" y2="510" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                {/* Orbital Ellipse */}
+                <ellipse cx="400" cy="280" rx="290" ry="200" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1.5" strokeDasharray="6 6" fill="none" />
+                
+                {/* Radial Ray Lines */}
+                <line x1="400" y1="280" x2="400" y2="55" stroke="rgba(245, 158, 11, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="190" y2="125" stroke="rgba(59, 130, 246, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="610" y2="125" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="115" y2="280" stroke="rgba(192, 132, 252, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="685" y2="280" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="190" y2="435" stroke="rgba(74, 222, 128, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="610" y2="435" stroke="rgba(251, 146, 60, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="400" y2="505" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
               </svg>
 
               {/* Central Glowing Orb */}
@@ -301,10 +305,11 @@ export default function BoardroomScene({
                 <span>FOUNDER'S<br />WAR ROOM</span>
               </div>
 
-              {/* 8 Agent Seat Nodes */}
+              {/* 8 Agent Seat Nodes with Top-Right Corner Badges */}
 
               {/* Chairman (Top) */}
               <div className="wr-agent-seat-node seat-chairman">
+                <div className="wr-node-corner-badge badge-gold">✓</div>
                 <div className="wr-node-icon-avatar" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
                   <AppIcon name="chairman" size={18} color="#fbbf24" />
                 </div>
@@ -317,6 +322,7 @@ export default function BoardroomScene({
 
               {/* CEO (Top-Left) */}
               <div className="wr-agent-seat-node seat-ceo">
+                <div className="wr-node-corner-badge">✓</div>
                 <div className="wr-node-icon-avatar" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' }}>
                   <AppIcon name="ceo" size={18} color="#3b82f6" />
                 </div>
@@ -329,6 +335,7 @@ export default function BoardroomScene({
 
               {/* Investor (Top-Right) */}
               <div className="wr-agent-seat-node seat-investor">
+                <div className="wr-node-corner-badge">✓</div>
                 <div className="wr-node-icon-avatar" style={{ background: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24' }}>
                   <AppIcon name="investor" size={18} color="#fbbf24" />
                 </div>
@@ -341,6 +348,7 @@ export default function BoardroomScene({
 
               {/* Marketing (Mid-Left) */}
               <div className="wr-agent-seat-node seat-marketing">
+                <div className="wr-node-corner-badge">✓</div>
                 <div className="wr-node-icon-avatar" style={{ background: 'rgba(192, 132, 252, 0.2)', color: '#c084fc' }}>
                   <AppIcon name="marketing" size={18} color="#c084fc" />
                 </div>
@@ -353,6 +361,7 @@ export default function BoardroomScene({
 
               {/* CTO (Mid-Right) */}
               <div className="wr-agent-seat-node seat-cto">
+                <div className="wr-node-corner-badge">✓</div>
                 <div className="wr-node-icon-avatar" style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>
                   <AppIcon name="cto" size={18} color="#38bdf8" />
                 </div>
@@ -365,6 +374,7 @@ export default function BoardroomScene({
 
               {/* Customer (Bottom-Left) */}
               <div className="wr-agent-seat-node seat-customer">
+                <div className="wr-node-corner-badge">✓</div>
                 <div className="wr-node-icon-avatar" style={{ background: 'rgba(74, 222, 128, 0.2)', color: '#4ade80' }}>
                   <AppIcon name="customer" size={18} color="#4ade80" />
                 </div>
@@ -377,6 +387,7 @@ export default function BoardroomScene({
 
               {/* Risk Advisor (Bottom-Right) */}
               <div className="wr-agent-seat-node seat-risk">
+                <div className="wr-node-corner-badge badge-gold">🔑</div>
                 <div className="wr-node-icon-avatar" style={{ background: 'rgba(251, 146, 60, 0.2)', color: '#fb923c' }}>
                   <AppIcon name="risk" size={18} color="#fb923c" />
                 </div>
@@ -389,6 +400,7 @@ export default function BoardroomScene({
 
               {/* Grim Reaper (Bottom) */}
               <div className="wr-agent-seat-node seat-reaper">
+                <div className="wr-node-corner-badge badge-red">💀</div>
                 <div className="wr-node-icon-avatar" style={{ background: 'rgba(248, 113, 113, 0.2)', color: '#f87171' }}>
                   <AppIcon name="reaper" size={18} color="#f87171" />
                 </div>
