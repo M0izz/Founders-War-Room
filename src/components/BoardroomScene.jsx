@@ -284,15 +284,15 @@ export default function BoardroomScene({
             {/* Center Radial Canvas */}
             <div className="wr-radial-canvas">
               {/* SVG Dotted Connection Lines */}
-              <svg className="wr-svg-lines" viewBox="0 0 800 480">
-                <line x1="400" y1="240" x2="400" y2="45" stroke="rgba(245, 158, 11, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="240" x2="210" y2="135" stroke="rgba(59, 130, 246, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="240" x2="590" y2="135" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="240" x2="140" y2="240" stroke="rgba(192, 132, 252, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="240" x2="660" y2="240" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="240" x2="210" y2="345" stroke="rgba(74, 222, 128, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="240" x2="590" y2="345" stroke="rgba(251, 146, 60, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
-                <line x1="400" y1="240" x2="400" y2="435" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+              <svg className="wr-svg-lines" viewBox="0 0 800 560">
+                <line x1="400" y1="280" x2="400" y2="50" stroke="rgba(245, 158, 11, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="150" y2="125" stroke="rgba(59, 130, 246, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="650" y2="125" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="110" y2="245" stroke="rgba(192, 132, 252, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="690" y2="245" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="150" y2="365" stroke="rgba(74, 222, 128, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="650" y2="365" stroke="rgba(251, 146, 60, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
+                <line x1="400" y1="280" x2="400" y2="510" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
               </svg>
 
               {/* Central Glowing Orb */}
