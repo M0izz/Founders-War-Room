@@ -10112,3 +10112,485 @@ input:checked+.switch-slider:before {
 .version-timeline-scrollable::-webkit-scrollbar-thumb:hover {
   background: rgba(56, 189, 248, 0.65);
 }
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/* WAR ROOM MOCKUP INTERFACE — PIXEL PERFECT IMPLEMENTATION                  */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+.wr-mockup-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px;
+  background: #070b14;
+  color: #f1f5f9;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.wr-mockup-layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .wr-mockup-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Left Stage Container */
+.wr-left-stage-card {
+  background: radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0.95) 0%, rgba(7, 11, 20, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Header Topbar */
+.wr-topbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  gap: 16px;
+}
+
+.wr-topbar-headline h2 {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 0.06em;
+  margin: 0 0 4px 0;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+}
+
+.wr-topbar-headline p {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.wr-topbar-metrics {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.wr-metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wr-metric-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wr-metric-value {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wr-progress-bar-sm {
+  width: 110px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.wr-progress-fill-sm {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #3b82f6);
+  border-radius: 10px;
+}
+
+.wr-timer-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #f1f5f9;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Center Boardroom Radial Canvas */
+.wr-radial-canvas {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG Radial Background Lines */
+.wr-svg-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Central Glowing Shield Orb */
+.wr-center-orb-node {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #1e3a8a 0%, #0f172a 70%, #030712 100%);
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 50px rgba(56, 189, 248, 0.4), inset 0 0 30px rgba(56, 189, 248, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  z-index: 5;
+  text-align: center;
+  position: relative;
+}
+
+.wr-center-orb-node img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px #38bdf8);
+}
+
+.wr-center-orb-node span {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+/* Agent Node Positions around Orb */
+.wr-agent-seat-node {
+  position: absolute;
+  width: 180px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.wr-agent-seat-node.seat-chairman {
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.25);
+  background: rgba(30, 27, 18, 0.9);
+}
+
+.wr-agent-seat-node.seat-ceo {
+  top: 110px;
+  left: 120px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.wr-agent-seat-node.seat-investor {
+  top: 110px;
+  right: 120px;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.wr-agent-seat-node.seat-marketing {
+  top: 220px;
+  left: 50px;
+  border: 1px solid rgba(192, 132, 252, 0.4);
+}
+
+.wr-agent-seat-node.seat-cto {
+  top: 220px;
+  right: 50px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.wr-agent-seat-node.seat-customer {
+  bottom: 110px;
+  left: 120px;
+  border: 1px solid rgba(74, 222, 128, 0.4);
+}
+
+.wr-agent-seat-node.seat-risk {
+  bottom: 110px;
+  right: 120px;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+}
+
+.wr-agent-seat-node.seat-reaper {
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  box-shadow: 0 0 24px rgba(248, 113, 113, 0.2);
+  background: rgba(30, 15, 15, 0.9);
+}
+
+/* Avatar Circle */
+.wr-node-icon-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wr-node-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.wr-node-title {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #f8fafc;
+  line-height: 1.1;
+}
+
+.wr-node-role {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wr-node-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+.wr-node-status-pill.status-complete {
+  color: #4ade80;
+}
+
+.wr-node-status-pill.status-synthesizing {
+  color: #fbbf24;
+}
+
+.wr-node-status-pill.status-challenging {
+  color: #f87171;
+}
+
+/* Bottom Stepper Pipeline Row */
+.wr-stepper-pipeline-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.wr-step-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.wr-step-card.active-step {
+  background: rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+}
+
+.wr-step-card.completed-step {
+  background: rgba(74, 222, 128, 0.05);
+  border-color: rgba(74, 222, 128, 0.2);
+}
+
+.wr-step-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wr-step-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.wr-step-subtext {
+  font-size: 0.70rem;
+  color: #94a3b8;
+}
+
+/* Right Side Meeting Transcript Panel */
+.wr-transcript-panel-card {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.wr-transcript-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.wr-transcript-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #f8fafc;
+  letter-spacing: 0.04em;
+}
+
+.wr-transcript-filter-select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+}
+
+.wr-transcript-feed-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.3) rgba(15, 23, 42, 0.6);
+}
+
+/* Transcript Message Entry Card */
+.wr-msg-card-item {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  gap: 12px;
+  position: relative;
+  transition: transform 0.2s ease, background 0.2s ease;
+  border-left: 4px solid #38bdf8;
+}
+
+.wr-msg-card-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wr-msg-card-item.theme-ceo { border-left-color: #3b82f6; }
+.wr-msg-card-item.theme-investor { border-left-color: #fbbf24; }
+.wr-msg-card-item.theme-marketing { border-left-color: #c084fc; }
+.wr-msg-card-item.theme-cto { border-left-color: #38bdf8; }
+.wr-msg-card-item.theme-customer { border-left-color: #4ade80; }
+.wr-msg-card-item.theme-risk { border-left-color: #fb923c; }
+.wr-msg-card-item.theme-reaper { border-left-color: #f87171; background: rgba(248, 113, 113, 0.06); }
+.wr-msg-card-item.theme-chairman { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.06); }
+
+.wr-msg-avatar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wr-msg-content-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.wr-msg-header-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wr-msg-speaker-name {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.wr-msg-timestamp {
+  font-size: 0.70rem;
+  color: #64748b;
+}
+
+.wr-msg-tag-badge {
+  font-size: 0.60rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wr-msg-quote-text {
+  font-size: 0.80rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin: 0;
+}
