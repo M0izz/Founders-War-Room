@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { LanguageContext } from '../contexts/LanguageContext.jsx';
 import AppIcon from './AppIcon.jsx';
 
 const TRANSLATIONS = {
@@ -277,15 +278,18 @@ export default function SettingsView({
   const [autoArchive, setAutoArchive] = useState(false);
   const [betaFeatures, setBetaFeatures] = useState(false);
 
+  const { language: contextLanguage, changeLanguage, t: contextT } = useContext(LanguageContext);
+
   // Dropdown states
   const [privacy, setPrivacy] = useState('Private');
-  const [language, setLanguage] = useState(() => propLanguage || localStorage.getItem('fwr_language') || 'English');
+  const [language, setLanguage] = useState(() => contextLanguage || propLanguage || localStorage.getItem('fwr_language') || 'English');
 
   useEffect(() => {
-    if (propLanguage && propLanguage !== language) {
-      setLanguage(propLanguage);
+    const activeLang = contextLanguage || propLanguage;
+    if (activeLang && activeLang !== language) {
+      setLanguage(activeLang);
     }
-  }, [propLanguage]);
+  }, [contextLanguage, propLanguage]);
   const [meetingLength, setMeetingLength] = useState('4 Minutes');
   const [responseDepth, setResponseDepth] = useState('Detailed');
   const [exportQuality, setExportQuality] = useState('High (PDF)');
@@ -348,6 +352,8 @@ export default function SettingsView({
 
   // Translation helper function
   const t = (key) => {
+    const ctxRes = contextT ? contextT(key) : key;
+    if (ctxRes !== key) return ctxRes;
     return TRANSLATIONS[language]?.[key] || TRANSLATIONS.English[key] || key;
   };
 
@@ -504,7 +510,7 @@ export default function SettingsView({
         {/* Main Content Workspace Grid */}
         <main className="v2-main-content" style={{ maxWidth: '1440px' }}>
           <div className="settings-feed-column">
-            
+
             {/* Header Title Row with Profile Card on Right */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
@@ -600,538 +606,541 @@ export default function SettingsView({
               </div>
             </div>
 
-              {/* Dynamic Grid of Settings Cards Filtered by Search */}
-              <div className="settings-cards-grid">
-                {/* Card 1: General Preferences */}
-                {matchesSearch('General Preferences', ['privacy', 'auto-save', 'delete', 'language', 'english', 'spanish']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="cto" size={18} color="#c084fc" />
-                      <h3>{t('generalPref')}</h3>
+            {/* Dynamic Grid of Settings Cards Filtered by Search */}
+            <div className="settings-cards-grid">
+              {/* Card 1: General Preferences */}
+              {matchesSearch('General Preferences', ['privacy', 'auto-save', 'delete', 'language', 'english', 'spanish']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="cto" size={18} color="#c084fc" />
+                    <h3>{t('generalPref')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('missionPrivacy')}</span>
+                        <span className="setting-desc">{t('missionPrivacyDesc')}</span>
+                      </div>
+                      <select className="settings-select" value={privacy} onChange={(e) => setPrivacy(e.target.value)}>
+                        <option value="Private">Private</option>
+                        <option value="Public">Public</option>
+                        <option value="Team">Team Only</option>
+                      </select>
                     </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('missionPrivacy')}</span>
-                          <span className="setting-desc">{t('missionPrivacyDesc')}</span>
-                        </div>
-                        <select className="settings-select" value={privacy} onChange={(e) => setPrivacy(e.target.value)}>
-                          <option value="Private">Private</option>
-                          <option value="Public">Public</option>
-                          <option value="Team">Team Only</option>
-                        </select>
-                      </div>
 
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('autoSave')}</span>
-                          <span className="setting-desc">{t('autoSaveDesc')}</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={autoSave} onChange={() => setAutoSave(!autoSave)} />
-                          <span className="switch-slider" />
-                        </label>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('autoSave')}</span>
+                        <span className="setting-desc">{t('autoSaveDesc')}</span>
                       </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={autoSave} onChange={() => setAutoSave(!autoSave)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
 
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('confirmDelete')}</span>
-                          <span className="setting-desc">{t('confirmDeleteDesc')}</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={confirmDelete} onChange={() => setConfirmDelete(!confirmDelete)} />
-                          <span className="switch-slider" />
-                        </label>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('confirmDelete')}</span>
+                        <span className="setting-desc">{t('confirmDeleteDesc')}</span>
                       </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={confirmDelete} onChange={() => setConfirmDelete(!confirmDelete)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
 
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('defaultLang')}</span>
-                          <span className="setting-desc">{t('defaultLangDesc')}</span>
-                        </div>
-                        <select
-                          className="settings-select"
-                          value={language}
-                          onChange={(e) => {
-                            const newLang = e.target.value;
-                            setLanguage(newLang);
-                            localStorage.setItem('fwr_language', newLang);
-                            if (onLanguageChange) {
-                              onLanguageChange(newLang);
-                            }
-                          }}
-                        >
-                          <option value="English">English</option>
-                          <option value="Spanish">Español</option>
-                          <option value="German">Deutsch</option>
-                          <option value="French">Français</option>
-                        </select>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('defaultLang')}</span>
+                        <span className="setting-desc">{t('defaultLangDesc')}</span>
                       </div>
+                      <select
+                        className="settings-select"
+                        value={language}
+                        onChange={(e) => {
+                          const newLang = e.target.value;
+                          setLanguage(newLang);
+                          if (changeLanguage) {
+                            changeLanguage(newLang);
+                          }
+                          localStorage.setItem('fwr_language', newLang);
+                          if (onLanguageChange) {
+                            onLanguageChange(newLang);
+                          }
+                        }}
+                      >
+                        <option value="English">English</option>
+                        <option value="Spanish">Español</option>
+                        <option value="German">Deutsch</option>
+                        <option value="French">Français</option>
+                      </select>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Card 2: Meeting & Analysis */}
-                {matchesSearch('Meeting & Analysis', ['meeting', 'length', 'depth', 'debate', 'sources', 'analysis', 'time']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="history" size={18} color="#38bdf8" />
-                      <h3>{t('meetingAnalysis')}</h3>
+              {/* Card 2: Meeting & Analysis */}
+              {matchesSearch('Meeting & Analysis', ['meeting', 'length', 'depth', 'debate', 'sources', 'analysis', 'time']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="history" size={18} color="#38bdf8" />
+                    <h3>{t('meetingAnalysis')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('meetingLength')}</span>
+                        <span className="setting-desc">{t('meetingLengthDesc')}</span>
+                      </div>
+                      <select className="settings-select" value={meetingLength} onChange={(e) => setMeetingLength(e.target.value)}>
+                        <option value="2 Minutes">2 Minutes</option>
+                        <option value="4 Minutes">4 Minutes</option>
+                        <option value="8 Minutes">8 Minutes</option>
+                      </select>
                     </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('meetingLength')}</span>
-                          <span className="setting-desc">{t('meetingLengthDesc')}</span>
-                        </div>
-                        <select className="settings-select" value={meetingLength} onChange={(e) => setMeetingLength(e.target.value)}>
-                          <option value="2 Minutes">2 Minutes</option>
-                          <option value="4 Minutes">4 Minutes</option>
-                          <option value="8 Minutes">8 Minutes</option>
-                        </select>
-                      </div>
 
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('responseDepth')}</span>
-                          <span className="setting-desc">{t('responseDepthDesc')}</span>
-                        </div>
-                        <select className="settings-select" value={responseDepth} onChange={(e) => setResponseDepth(e.target.value)}>
-                          <option value="Concise">Concise</option>
-                          <option value="Detailed">Detailed</option>
-                          <option value="Exhaustive">Exhaustive</option>
-                        </select>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('responseDepth')}</span>
+                        <span className="setting-desc">{t('responseDepthDesc')}</span>
                       </div>
+                      <select className="settings-select" value={responseDepth} onChange={(e) => setResponseDepth(e.target.value)}>
+                        <option value="Concise">Concise</option>
+                        <option value="Detailed">Detailed</option>
+                        <option value="Exhaustive">Exhaustive</option>
+                      </select>
+                    </div>
 
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('enableDebate')}</span>
-                          <span className="setting-desc">{t('enableDebateDesc')}</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={debateMode} onChange={() => setDebateMode(!debateMode)} />
-                          <span className="switch-slider" />
-                        </label>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('enableDebate')}</span>
+                        <span className="setting-desc">{t('enableDebateDesc')}</span>
                       </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={debateMode} onChange={() => setDebateMode(!debateMode)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
 
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('includeSources')}</span>
-                          <span className="setting-desc">{t('includeSourcesDesc')}</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={includeSources} onChange={() => setIncludeSources(!includeSources)} />
-                          <span className="switch-slider" />
-                        </label>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('includeSources')}</span>
+                        <span className="setting-desc">{t('includeSourcesDesc')}</span>
                       </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={includeSources} onChange={() => setIncludeSources(!includeSources)} />
+                        <span className="switch-slider" />
+                      </label>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Card 3 (Row 1): Board Member Roster (8 Agents in 2 Columns) */}
-                {matchesSearch('Board Member Roster', ['board', 'members', 'roster', 'ceo', 'cto', 'cmo', 'cfo', 'investor', 'risk', 'customer', 'devils advocate', 'advocate']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header" style={{ justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <AppIcon name="ceo" size={18} color="#fbbf24" />
-                        <h3>{t('boardRoster')}</h3>
-                      </div>
-                      <span style={{ fontSize: '0.8rem', color: '#4ade80', fontWeight: 800 }}>
-                        {Object.values(activeBoardMembers).filter(Boolean).length} / 8 Active
-                      </span>
+              {/* Card 3 (Row 1): Board Member Roster (8 Agents in 2 Columns) */}
+              {matchesSearch('Board Member Roster', ['board', 'members', 'roster', 'ceo', 'cto', 'cmo', 'cfo', 'investor', 'risk', 'customer', 'devils advocate', 'advocate']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header" style={{ justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <AppIcon name="ceo" size={18} color="#fbbf24" />
+                      <h3>{t('boardRoster')}</h3>
                     </div>
-                    <div className="settings-form-list" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px' }}>
-                      {Object.entries({
-                        ceo: { title: 'Marcus Vance (CEO)', tag: 'CEO' },
-                        cto: { title: 'Dr. Aris Thorne (CTO)', tag: 'CTO' },
-                        cmo: { title: 'Elena Rostova (CMO)', tag: 'CMO' },
-                        cfo: { title: 'Victor Sterling (CFO)', tag: 'CFO' },
-                        investor: { title: 'Priya Desai (Investor)', tag: 'Investor' },
-                        risk: { title: 'Dr. Quinn Hayes (Risk)', tag: 'Risk' },
-                        customer: { title: 'Samir Khan (Customer)', tag: 'Customer' },
-                        devilsAdvocate: { title: "Grim Reaper (Devil's Advocate)", tag: "Devil's Advocate" },
-                      }).map(([key, item]) => (
-                        <div className="setting-row" key={key} style={{ padding: '6px 10px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div className="setting-info" style={{ flexDirection: 'row', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-                            <span className="setting-label" style={{ fontWeight: 800, fontSize: '0.82rem', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.title}>
-                              {item.tag}
-                            </span>
-                          </div>
-                          <label className="settings-switch" style={{ flexShrink: 0 }}>
-                            <input
-                              type="checkbox"
-                              checked={activeBoardMembers[key]}
-                              onChange={() =>
-                                setActiveBoardMembers((prev) => ({ ...prev, [key]: !prev[key] }))
-                              }
-                            />
-                            <span className="switch-slider" />
-                          </label>
-                        </div>
-                      ))}
-                    </div>
+                    <span style={{ fontSize: '0.8rem', color: '#4ade80', fontWeight: 800 }}>
+                      {Object.values(activeBoardMembers).filter(Boolean).length} / 8 Active
+                    </span>
                   </div>
-                )}
-
-                {/* Card 4 (Row 2): Debate Dynamics */}
-                {matchesSearch('Debate Dynamics', ['debate', 'aggressiveness', 'interruption', 'strictness', 'fact-check', 'tone', 'friction']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="debate" size={18} color="#f43f5e" />
-                      <h3>{t('debateDynamics')}</h3>
-                    </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('debateAggressiveness')}</span>
-                          <span className="setting-desc">{t('debateAggressivenessDesc')}</span>
-                        </div>
-                        <select className="settings-select" value={debateIntensity} onChange={(e) => setDebateIntensity(e.target.value)}>
-                          <option value="Polite">Polite</option>
-                          <option value="Balanced">Balanced</option>
-                          <option value="Aggressive">Aggressive</option>
-                          <option value="Relentless">Relentless</option>
-                        </select>
-                      </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('interruptionRate')}</span>
-                          <span className="setting-desc">{t('interruptionRateDesc')}</span>
-                        </div>
-                        <select className="settings-select" value={interruptionRate} onChange={(e) => setInterruptionRate(e.target.value)}>
-                          <option value="Low">Low</option>
-                          <option value="Medium">Medium</option>
-                          <option value="High">High</option>
-                        </select>
-                      </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">Fact-Check Strictness</span>
-                          <span className="setting-desc">How strictly agents fact-check</span>
-                        </div>
-                        <select className="settings-select" value={factCheckStrictness} onChange={(e) => setFactCheckStrictness(e.target.value)}>
-                          <option value="Standard">Standard</option>
-                          <option value="High">High</option>
-                          <option value="Maximum">Maximum</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Card 5 (Row 2): Theme & Visuals */}
-                {matchesSearch('Theme & Visuals', ['theme', 'appearance', 'visuals', 'dark', 'cyberpunk', 'midnight', 'obsidian', 'color', 'accent', 'gold', 'purple', 'font', 'scale']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="activity" size={18} color="#c084fc" />
-                      <h3>{t('themeVisuals')}</h3>
-                    </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('interfaceTheme')}</span>
-                          <span className="setting-desc">Choose your theme</span>
-                        </div>
-                        <select className="settings-select" value={themeMode} onChange={(e) => setThemeMode(e.target.value)}>
-                          <option value="Cyberpunk Dark">Cyberpunk Dark</option>
-                          <option value="Midnight Blue">Midnight Blue</option>
-                          <option value="Obsidian Black">Obsidian Stealth</option>
-                        </select>
-                      </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('accentColor')}</span>
-                          <span className="setting-desc">Highlight elements</span>
-                        </div>
-                        <select className="settings-select" value={accentColor} onChange={(e) => setAccentColor(e.target.value)}>
-                          <option value="Gold">Gold Amber</option>
-                          <option value="Purple">Neon Purple</option>
-                          <option value="Cyan">Electric Cyan</option>
-                          <option value="Emerald">Emerald Green</option>
-                        </select>
-                      </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('fontScale')}</span>
-                          <span className="setting-desc">UI text sizing</span>
-                        </div>
-                        <select className="settings-select" value={fontScale} onChange={(e) => setFontScale(e.target.value)}>
-                          <option value="Compact">Compact</option>
-                          <option value="Standard">Standard</option>
-                          <option value="Large">Large</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Card 6 (Row 2): VFX & Typography */}
-                {matchesSearch('VFX & Typography', ['glow', 'vfx', 'font', 'scale', 'text', 'size', 'effects', 'animations', 'family']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="sparkles" size={18} color="#38bdf8" />
-                      <h3>{t('vfxTypography')}</h3>
-                    </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('glowEffects')}</span>
-                          <span className="setting-desc">Ambient background glow</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={vfxGlow} onChange={() => setVfxGlow(!vfxGlow)} />
-                          <span className="switch-slider" />
-                        </label>
-                      </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">Animations</span>
-                          <span className="setting-desc">Enable smooth animations</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={enableAnimations} onChange={() => setEnableAnimations(!enableAnimations)} />
-                          <span className="switch-slider" />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Card 10: Email Notifications */}
-                {matchesSearch('Email Notifications', ['email', 'notifications', 'digest', 'weekly', 'warnings', 'alerts', 'risk']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="bell" size={18} color="#fbbf24" />
-                      <h3>{t('emailNotifications')}</h3>
-                    </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('weeklyDigest')}</span>
-                          <span className="setting-desc">Weekly executive AI briefing</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={emailDigest} onChange={() => setEmailDigest(!emailDigest)} />
-                          <span className="switch-slider" />
-                        </label>
-                      </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('riskWarnings')}</span>
-                          <span className="setting-desc">Red flag alerts</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={riskAlerts} onChange={() => setRiskAlerts(!riskAlerts)} />
-                          <span className="switch-slider" />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Card 11 (Row 3): Audio & Webhooks */}
-                {matchesSearch('Audio & Webhooks', ['audio', 'sound', 'sfx', 'webhook', 'slack', 'discord', 'integrations']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="target" size={18} color="#38bdf8" />
-                      <h3>{t('audioWebhooks')}</h3>
-                    </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('soundEffects')}</span>
-                          <span className="setting-desc">In-app alert audio</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={soundEffects} onChange={() => setSoundEffects(!soundEffects)} />
-                          <span className="switch-slider" />
-                        </label>
-                      </div>
-                      <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
-                        <div className="setting-info">
-                          <span className="setting-label">{t('slackWebhook')}</span>
-                          <span className="setting-desc">Post alerts to channel</span>
-                        </div>
-                        <input
-                          type="text"
-                          className="settings-input"
-                          placeholder="https://hooks.slack.com/services/..."
-                          value={slackWebhook || 'https://hooks.slack.com/d...'}
-                          onChange={(e) => setSlackWebhook(e.target.value)}
-                          style={{ width: '100%' }}
-                        />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
-                          <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                            ● Connected
+                  <div className="settings-form-list" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px' }}>
+                    {Object.entries({
+                      ceo: { title: 'Marcus Vance (CEO)', tag: 'CEO' },
+                      cto: { title: 'Dr. Aris Thorne (CTO)', tag: 'CTO' },
+                      cmo: { title: 'Elena Rostova (CMO)', tag: 'CMO' },
+                      cfo: { title: 'Victor Sterling (CFO)', tag: 'CFO' },
+                      investor: { title: 'Priya Desai (Investor)', tag: 'Investor' },
+                      risk: { title: 'Dr. Quinn Hayes (Risk)', tag: 'Risk' },
+                      customer: { title: 'Samir Khan (Customer)', tag: 'Customer' },
+                      devilsAdvocate: { title: "Grim Reaper (Devil's Advocate)", tag: "Devil's Advocate" },
+                    }).map(([key, item]) => (
+                      <div className="setting-row" key={key} style={{ padding: '6px 10px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div className="setting-info" style={{ flexDirection: 'row', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                          <span className="setting-label" style={{ fontWeight: 800, fontSize: '0.82rem', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.title}>
+                            {item.tag}
                           </span>
-                          <button className="connect-btn outline" style={{ padding: '3px 14px', fontSize: '0.78rem', height: '28px' }} onClick={() => alert('Editing Slack Webhook...')}>
-                            Edit
-                          </button>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Card 12 (Row 3): Data & Storage */}
-                {matchesSearch('Data & Storage', ['data', 'storage', 'export', 'pdf', 'png', 'json', 'archive', 'quality']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="briefcase" size={18} color="#4ade80" />
-                      <h3>{t('dataStorage')}</h3>
-                    </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('exportQuality')}</span>
-                          <span className="setting-desc">Quality for exported reports</span>
-                        </div>
-                        <select className="settings-select" value={exportQuality} onChange={(e) => setExportQuality(e.target.value)}>
-                          <option value="High (PDF)">High (PDF)</option>
-                          <option value="Standard (PNG)">Standard (PNG)</option>
-                          <option value="Raw (JSON)">Raw (JSON)</option>
-                        </select>
-                      </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('autoArchive')}</span>
-                          <span className="setting-desc">Archive missions older than 90 days</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={autoArchive} onChange={() => setAutoArchive(!autoArchive)} />
+                        <label className="settings-switch" style={{ flexShrink: 0 }}>
+                          <input
+                            type="checkbox"
+                            checked={activeBoardMembers[key]}
+                            onChange={() =>
+                              setActiveBoardMembers((prev) => ({ ...prev, [key]: !prev[key] }))
+                            }
+                          />
                           <span className="switch-slider" />
                         </label>
                       </div>
-                      <div className="storage-bar-block" style={{ marginTop: '8px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <div className="storage-lbl-line" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span className="setting-label" style={{ fontSize: '0.82rem', color: '#ffffff' }}>Storage Used</span>
-                          <span className="storage-sub-txt" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>12.4 GB / 50 GB</span>
-                        </div>
-                        <div className="storage-progress-bg" style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
-                          <div className="storage-progress-fill" style={{ width: '24%', height: '100%', background: '#4ade80', borderRadius: '10px' }} />
-                        </div>
-                        <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>24%</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Card 4 (Row 2): Debate Dynamics */}
+              {matchesSearch('Debate Dynamics', ['debate', 'aggressiveness', 'interruption', 'strictness', 'fact-check', 'tone', 'friction']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="debate" size={18} color="#f43f5e" />
+                    <h3>{t('debateDynamics')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('debateAggressiveness')}</span>
+                        <span className="setting-desc">{t('debateAggressivenessDesc')}</span>
+                      </div>
+                      <select className="settings-select" value={debateIntensity} onChange={(e) => setDebateIntensity(e.target.value)}>
+                        <option value="Polite">Polite</option>
+                        <option value="Balanced">Balanced</option>
+                        <option value="Aggressive">Aggressive</option>
+                        <option value="Relentless">Relentless</option>
+                      </select>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('interruptionRate')}</span>
+                        <span className="setting-desc">{t('interruptionRateDesc')}</span>
+                      </div>
+                      <select className="settings-select" value={interruptionRate} onChange={(e) => setInterruptionRate(e.target.value)}>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                      </select>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">Fact-Check Strictness</span>
+                        <span className="setting-desc">How strictly agents fact-check</span>
+                      </div>
+                      <select className="settings-select" value={factCheckStrictness} onChange={(e) => setFactCheckStrictness(e.target.value)}>
+                        <option value="Standard">Standard</option>
+                        <option value="High">High</option>
+                        <option value="Maximum">Maximum</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Card 5 (Row 2): Theme & Visuals */}
+              {matchesSearch('Theme & Visuals', ['theme', 'appearance', 'visuals', 'dark', 'cyberpunk', 'midnight', 'obsidian', 'color', 'accent', 'gold', 'purple', 'font', 'scale']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="activity" size={18} color="#c084fc" />
+                    <h3>{t('themeVisuals')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('interfaceTheme')}</span>
+                        <span className="setting-desc">Choose your theme</span>
+                      </div>
+                      <select className="settings-select" value={themeMode} onChange={(e) => setThemeMode(e.target.value)}>
+                        <option value="Cyberpunk Dark">Cyberpunk Dark</option>
+                        <option value="Midnight Blue">Midnight Blue</option>
+                        <option value="Obsidian Black">Obsidian Stealth</option>
+                      </select>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('accentColor')}</span>
+                        <span className="setting-desc">Highlight elements</span>
+                      </div>
+                      <select className="settings-select" value={accentColor} onChange={(e) => setAccentColor(e.target.value)}>
+                        <option value="Gold">Gold Amber</option>
+                        <option value="Purple">Neon Purple</option>
+                        <option value="Cyan">Electric Cyan</option>
+                        <option value="Emerald">Emerald Green</option>
+                      </select>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('fontScale')}</span>
+                        <span className="setting-desc">UI text sizing</span>
+                      </div>
+                      <select className="settings-select" value={fontScale} onChange={(e) => setFontScale(e.target.value)}>
+                        <option value="Compact">Compact</option>
+                        <option value="Standard">Standard</option>
+                        <option value="Large">Large</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Card 6 (Row 2): VFX & Typography */}
+              {matchesSearch('VFX & Typography', ['glow', 'vfx', 'font', 'scale', 'text', 'size', 'effects', 'animations', 'family']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="sparkles" size={18} color="#38bdf8" />
+                    <h3>{t('vfxTypography')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('glowEffects')}</span>
+                        <span className="setting-desc">Ambient background glow</span>
+                      </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={vfxGlow} onChange={() => setVfxGlow(!vfxGlow)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">Animations</span>
+                        <span className="setting-desc">Enable smooth animations</span>
+                      </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={enableAnimations} onChange={() => setEnableAnimations(!enableAnimations)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Card 10: Email Notifications */}
+              {matchesSearch('Email Notifications', ['email', 'notifications', 'digest', 'weekly', 'warnings', 'alerts', 'risk']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="bell" size={18} color="#fbbf24" />
+                    <h3>{t('emailNotifications')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('weeklyDigest')}</span>
+                        <span className="setting-desc">Weekly executive AI briefing</span>
+                      </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={emailDigest} onChange={() => setEmailDigest(!emailDigest)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('riskWarnings')}</span>
+                        <span className="setting-desc">Red flag alerts</span>
+                      </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={riskAlerts} onChange={() => setRiskAlerts(!riskAlerts)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Card 11 (Row 3): Audio & Webhooks */}
+              {matchesSearch('Audio & Webhooks', ['audio', 'sound', 'sfx', 'webhook', 'slack', 'discord', 'integrations']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="target" size={18} color="#38bdf8" />
+                    <h3>{t('audioWebhooks')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('soundEffects')}</span>
+                        <span className="setting-desc">In-app alert audio</span>
+                      </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={soundEffects} onChange={() => setSoundEffects(!soundEffects)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
+                    <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
+                      <div className="setting-info">
+                        <span className="setting-label">{t('slackWebhook')}</span>
+                        <span className="setting-desc">Post alerts to channel</span>
+                      </div>
+                      <input
+                        type="text"
+                        className="settings-input"
+                        placeholder="https://hooks.slack.com/services/..."
+                        value={slackWebhook || 'https://hooks.slack.com/d...'}
+                        onChange={(e) => setSlackWebhook(e.target.value)}
+                        style={{ width: '100%' }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          ● Connected
+                        </span>
+                        <button className="connect-btn outline" style={{ padding: '3px 14px', fontSize: '0.78rem', height: '28px' }} onClick={() => alert('Editing Slack Webhook...')}>
+                          Edit
+                        </button>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Card 13 (Row 4): Privacy & Security */}
-                {matchesSearch('Privacy & Security', ['privacy', 'encryption', 'zero-data', 'retention', 'security', 'confidentiality']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="risk" size={18} color="#38bdf8" />
-                      <h3>{t('privacySecurity')}</h3>
+              {/* Card 12 (Row 3): Data & Storage */}
+              {matchesSearch('Data & Storage', ['data', 'storage', 'export', 'pdf', 'png', 'json', 'archive', 'quality']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="briefcase" size={18} color="#4ade80" />
+                    <h3>{t('dataStorage')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('exportQuality')}</span>
+                        <span className="setting-desc">Quality for exported reports</span>
+                      </div>
+                      <select className="settings-select" value={exportQuality} onChange={(e) => setExportQuality(e.target.value)}>
+                        <option value="High (PDF)">High (PDF)</option>
+                        <option value="Standard (PNG)">Standard (PNG)</option>
+                        <option value="Raw (JSON)">Raw (JSON)</option>
+                      </select>
                     </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('localEncryption')}</span>
-                          <span className="setting-desc">Encrypt stored browser state</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={localEncryption} onChange={() => setLocalEncryption(!localEncryption)} />
-                          <span className="switch-slider" />
-                        </label>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('autoArchive')}</span>
+                        <span className="setting-desc">Archive missions older than 90 days</span>
                       </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('zeroRetention')}</span>
-                          <span className="setting-desc">Do not log conversations</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={zeroRetention} onChange={() => setZeroRetention(!zeroRetention)} />
-                          <span className="switch-slider" />
-                        </label>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={autoArchive} onChange={() => setAutoArchive(!autoArchive)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
+                    <div className="storage-bar-block" style={{ marginTop: '8px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                      <div className="storage-lbl-line" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span className="setting-label" style={{ fontSize: '0.82rem', color: '#ffffff' }}>Storage Used</span>
+                        <span className="storage-sub-txt" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>12.4 GB / 50 GB</span>
                       </div>
+                      <div className="storage-progress-bg" style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div className="storage-progress-fill" style={{ width: '24%', height: '100%', background: '#4ade80', borderRadius: '10px' }} />
+                      </div>
+                      <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>24%</div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Card 14 (Row 4): Danger Zone */}
-                {matchesSearch('Danger Zone', ['danger', 'cache', 'reset', 'clear', 'delete']) && (
-                  <div className="settings-card glass-panel danger-card">
-                    <div className="settings-card-header">
-                      <AppIcon name="risk" size={18} color="#f87171" />
-                      <h3 style={{ color: '#f87171' }}>{t('dangerZone')}</h3>
+              {/* Card 13 (Row 4): Privacy & Security */}
+              {matchesSearch('Privacy & Security', ['privacy', 'encryption', 'zero-data', 'retention', 'security', 'confidentiality']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="risk" size={18} color="#38bdf8" />
+                    <h3>{t('privacySecurity')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('localEncryption')}</span>
+                        <span className="setting-desc">Encrypt stored browser state</span>
+                      </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={localEncryption} onChange={() => setLocalEncryption(!localEncryption)} />
+                        <span className="switch-slider" />
+                      </label>
                     </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label red" style={{ color: '#f87171' }}>Clear Cache</span>
-                          <span className="setting-desc">Remove temporary data</span>
-                        </div>
-                        <button className="danger-btn" onClick={() => alert('Cache cleared successfully!')}>
-                          Clear
-                        </button>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('zeroRetention')}</span>
+                        <span className="setting-desc">Do not log conversations</span>
                       </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label red" style={{ color: '#f87171' }}>Reset Preferences</span>
-                          <span className="setting-desc">Reset all settings to default</span>
-                        </div>
-                        <button className="danger-btn" onClick={() => alert('Preferences reset to default.')}>
-                          Reset
-                        </button>
-                      </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label red" style={{ color: '#f87171' }}>Delete Account</span>
-                          <span className="setting-desc">Permanently delete your account</span>
-                        </div>
-                        <button className="danger-btn" onClick={() => alert('Account deletion request initiated.')}>
-                          Delete
-                        </button>
-                      </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={zeroRetention} onChange={() => setZeroRetention(!zeroRetention)} />
+                        <span className="switch-slider" />
+                      </label>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Card 15 (Row 4): Advanced Options */}
-                {matchesSearch('Advanced Options', ['beta', 'features', 'experimental', 'advanced', 'api', 'custom', 'prompts']) && (
-                  <div className="settings-card glass-panel">
-                    <div className="settings-card-header">
-                      <AppIcon name="cto" size={18} color="#fb923c" />
-                      <h3>{t('advancedOptions')}</h3>
+              {/* Card 14 (Row 4): Danger Zone */}
+              {matchesSearch('Danger Zone', ['danger', 'cache', 'reset', 'clear', 'delete']) && (
+                <div className="settings-card glass-panel danger-card">
+                  <div className="settings-card-header">
+                    <AppIcon name="risk" size={18} color="#f87171" />
+                    <h3 style={{ color: '#f87171' }}>{t('dangerZone')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label red" style={{ color: '#f87171' }}>Clear Cache</span>
+                        <span className="setting-desc">Remove temporary data</span>
+                      </div>
+                      <button className="danger-btn" onClick={() => alert('Cache cleared successfully!')}>
+                        Clear
+                      </button>
                     </div>
-                    <div className="settings-form-list">
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">{t('betaFeatures')}</span>
-                          <span className="setting-desc">{t('betaFeaturesDesc')}</span>
-                        </div>
-                        <label className="settings-switch">
-                          <input type="checkbox" checked={betaFeatures} onChange={() => setBetaFeatures(!betaFeatures)} />
-                          <span className="switch-slider" />
-                        </label>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label red" style={{ color: '#f87171' }}>Reset Preferences</span>
+                        <span className="setting-desc">Reset all settings to default</span>
                       </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">API Access</span>
-                          <span className="setting-desc">Enable API for advanced usage</span>
-                        </div>
-                        <button className="connect-btn outline" style={{ padding: '4px 14px', fontSize: '0.8rem', height: '30px' }} onClick={() => alert('Opening API configuration...')}>
-                          Configure
-                        </button>
+                      <button className="danger-btn" onClick={() => alert('Preferences reset to default.')}>
+                        Reset
+                      </button>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label red" style={{ color: '#f87171' }}>Delete Account</span>
+                        <span className="setting-desc">Permanently delete your account</span>
                       </div>
-                      <div className="setting-row">
-                        <div className="setting-info">
-                          <span className="setting-label">Custom Prompts</span>
-                          <span className="setting-desc">Manage your custom AI prompts</span>
-                        </div>
-                        <button className="connect-btn outline" style={{ padding: '4px 14px', fontSize: '0.8rem', height: '30px' }} onClick={() => alert('Opening custom prompt manager...')}>
-                          Manage
-                        </button>
-                      </div>
+                      <button className="danger-btn" onClick={() => alert('Account deletion request initiated.')}>
+                        Delete
+                      </button>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Bottom Quote Banner */}
-              <div className="settings-quote-banner">
-                <p className="quote-text">“ Great decisions start with better insights. ”</p>
-                <span className="quote-author">— Your AI Board of Directors</span>
+              {/* Card 15 (Row 4): Advanced Options */}
+              {matchesSearch('Advanced Options', ['beta', 'features', 'experimental', 'advanced', 'api', 'custom', 'prompts']) && (
+                <div className="settings-card glass-panel">
+                  <div className="settings-card-header">
+                    <AppIcon name="cto" size={18} color="#fb923c" />
+                    <h3>{t('advancedOptions')}</h3>
+                  </div>
+                  <div className="settings-form-list">
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">{t('betaFeatures')}</span>
+                        <span className="setting-desc">{t('betaFeaturesDesc')}</span>
+                      </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={betaFeatures} onChange={() => setBetaFeatures(!betaFeatures)} />
+                        <span className="switch-slider" />
+                      </label>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">API Access</span>
+                        <span className="setting-desc">Enable API for advanced usage</span>
+                      </div>
+                      <button className="connect-btn outline" style={{ padding: '4px 14px', fontSize: '0.8rem', height: '30px' }} onClick={() => alert('Opening API configuration...')}>
+                        Configure
+                      </button>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-info">
+                        <span className="setting-label">Custom Prompts</span>
+                        <span className="setting-desc">Manage your custom AI prompts</span>
+                      </div>
+                      <button className="connect-btn outline" style={{ padding: '4px 14px', fontSize: '0.8rem', height: '30px' }} onClick={() => alert('Opening custom prompt manager...')}>
+                        Manage
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Quote Banner */}
+            <div className="settings-quote-banner">
+              <p className="quote-text">“ Great decisions start with better insights. ”</p>
+              <span className="quote-author">— Your AI Board of Directors</span>
             </div>
 
           </div>
@@ -1142,7 +1151,7 @@ export default function SettingsView({
       {isEditProfileOpen && (
         <div className="profile-modal-overlay" onClick={() => setIsEditProfileOpen(false)}>
           <div className="profile-modal-box" onClick={(e) => e.stopPropagation()}>
-            
+
             {/* Header */}
             <div className="profile-modal-header">
               <div className="profile-modal-title">
@@ -1156,7 +1165,7 @@ export default function SettingsView({
 
             {/* Body */}
             <div className="profile-modal-body">
-              
+
               {/* Account Details Section */}
               <div>
                 <div className="profile-modal-section-title">

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { LanguageContext } from '../contexts/LanguageContext.jsx';
 import AppIcon from './AppIcon.jsx';
 
 // Standardized Board Reports Database
@@ -287,6 +288,7 @@ export default function ReportsView({
   onOpenStartup,
   onConveneBoard,
 }) {
+  const { t } = useContext(LanguageContext);
   // Navigation & Level State: null = Level 1 Landing, String ID = Level 2 Memo Detail
   const [selectedReportId, setSelectedReportId] = useState(null);
 
@@ -507,32 +509,32 @@ export default function ReportsView({
           <nav className="v2-sidebar-nav">
             <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('dashboard')}>
               <span className="nav-item-icon"><AppIcon name="history" size={18} /></span>
-              <span>Dashboard</span>
+              <span>{t('navigation.dashboard')}</span>
             </button>
 
             <button className="v2-nav-item" onClick={() => onConveneBoard && onConveneBoard()}>
               <span className="nav-item-icon"><AppIcon name="build" size={18} /></span>
-              <span>New Startup</span>
+              <span>{t('navigation.newStartup')}</span>
             </button>
 
             <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('boardroom')}>
               <span className="nav-item-icon"><AppIcon name="ceo" size={18} /></span>
-              <span>War Room</span>
+              <span>{t('navigation.boardroom')}</span>
             </button>
 
             <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('timeline')}>
               <span className="nav-item-icon"><AppIcon name="activity" size={18} /></span>
-              <span>Evolution</span>
+              <span>{t('navigation.timeline')}</span>
             </button>
 
             <button className="v2-nav-item active" onClick={() => setSelectedReportId(null)}>
               <span className="nav-item-icon"><AppIcon name="history" size={18} color="#f59e0b" /></span>
-              <span style={{ color: '#f59e0b', fontWeight: 800 }}>Reports</span>
+              <span style={{ color: '#f59e0b', fontWeight: 800 }}>{t('navigation.reports')}</span>
             </button>
 
             <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('settings')}>
               <span className="nav-item-icon"><AppIcon name="cto" size={18} /></span>
-              <span>Settings</span>
+              <span>{t('navigation.settings')}</span>
             </button>
           </nav>
 
@@ -569,7 +571,7 @@ export default function ReportsView({
             <div>
               {/* Header Title Row */}
               <div style={{ marginBottom: '24px' }}>
-                <h1 className="settings-main-heading">REPORTS</h1>
+                <h1 className="settings-main-heading">{t('reports.title')}</h1>
                 <p className="settings-subtext">Your board's analysis, decisions, and recommendations</p>
               </div>
 

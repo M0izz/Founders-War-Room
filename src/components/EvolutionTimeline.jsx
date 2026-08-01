@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useContext } from 'react';
+import { LanguageContext } from '../contexts/LanguageContext.jsx';
 import AppIcon from './AppIcon.jsx';
 
 // Pre-populated initial startup dataset
@@ -401,6 +402,7 @@ export default function EvolutionTimeline({
   userName = 'Moiz',
   onClose,
 }) {
+  const { t } = useContext(LanguageContext);
   // Navigation level: 'library' (Level 1) or 'detail' (Level 2)
   const [currentLevel, setCurrentLevel] = useState('library');
   const [selectedStartupId, setSelectedStartupId] = useState('VITALINK');
@@ -611,32 +613,32 @@ export default function EvolutionTimeline({
           <nav className="v2-sidebar-nav">
             <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('dashboard')}>
               <span className="nav-item-icon"><AppIcon name="history" size={18} /></span>
-              <span>Dashboard</span>
+              <span>{t('navigation.dashboard')}</span>
             </button>
 
             <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('form')}>
               <span className="nav-item-icon"><AppIcon name="build" size={18} /></span>
-              <span>New Startup</span>
+              <span>{t('navigation.newStartup')}</span>
             </button>
 
             <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('boardroom')}>
               <span className="nav-item-icon"><AppIcon name="ceo" size={18} /></span>
-              <span>War Room</span>
+              <span>{t('navigation.boardroom')}</span>
             </button>
 
             <button className="v2-nav-item active" onClick={() => onNavigate && onNavigate('timeline')}>
               <span className="nav-item-icon"><AppIcon name="activity" size={18} color="#38bdf8" /></span>
-              <span style={{ color: '#38bdf8', fontWeight: 800 }}>Evolution</span>
+              <span style={{ color: '#38bdf8', fontWeight: 800 }}>{t('navigation.timeline')}</span>
             </button>
 
             <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('reports')}>
               <span className="nav-item-icon"><AppIcon name="history" size={18} /></span>
-              <span>Reports</span>
+              <span>{t('navigation.reports')}</span>
             </button>
 
             <button className="v2-nav-item" onClick={() => onNavigate && onNavigate('settings')}>
               <span className="nav-item-icon"><AppIcon name="cto" size={18} /></span>
-              <span>Settings</span>
+              <span>{t('navigation.settings')}</span>
             </button>
           </nav>
 

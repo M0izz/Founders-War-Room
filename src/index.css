@@ -6571,7 +6571,7 @@ ol {
 .v2-bg-grid {
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(59, 130, 246, 0.04) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(59, 130, 246, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
@@ -6903,8 +6903,13 @@ ol {
   gap: 12px;
 }
 
-.stat-icon-gold { font-size: 1.2rem; }
-.stat-icon-blue { font-size: 1.2rem; }
+.stat-icon-gold {
+  font-size: 1.2rem;
+}
+
+.stat-icon-blue {
+  font-size: 1.2rem;
+}
 
 .stat-text-stack {
   display: flex;
@@ -7057,8 +7062,14 @@ ol {
   transform: translateY(-2px);
 }
 
-.btn-warroom-icon { font-size: 1.2rem; }
-.btn-arrow-right { font-size: 1rem; color: #fbbf24; }
+.btn-warroom-icon {
+  font-size: 1.2rem;
+}
+
+.btn-arrow-right {
+  font-size: 1rem;
+  color: #fbbf24;
+}
 
 /* Recent Startups */
 .v2-recent-section {
@@ -7376,14 +7387,40 @@ ol {
   z-index: 10;
 }
 
-.floating-agent-card.top-left { top: 80px; left: 60px; animation-delay: 0s; }
-.floating-agent-card.top-right { top: 90px; right: 60px; animation-delay: 1.5s; }
-.floating-agent-card.bottom-left { bottom: 80px; left: 80px; animation-delay: 3s; }
-.floating-agent-card.bottom-right { bottom: 90px; right: 80px; animation-delay: 4.5s; }
+.floating-agent-card.top-left {
+  top: 80px;
+  left: 60px;
+  animation-delay: 0s;
+}
+
+.floating-agent-card.top-right {
+  top: 90px;
+  right: 60px;
+  animation-delay: 1.5s;
+}
+
+.floating-agent-card.bottom-left {
+  bottom: 80px;
+  left: 80px;
+  animation-delay: 3s;
+}
+
+.floating-agent-card.bottom-right {
+  bottom: 90px;
+  right: 80px;
+  animation-delay: 4.5s;
+}
 
 @keyframes floatCard {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
 }
 
 .notion-form-wrapper {
@@ -8025,9 +8062,17 @@ select option {
   letter-spacing: 0.04em;
 }
 
-.section-block-title.green { color: #4ade80; }
-.section-block-title.red { color: #f87171; }
-.section-block-title.blue { color: #60a5fa; }
+.section-block-title.green {
+  color: #4ade80;
+}
+
+.section-block-title.red {
+  color: #f87171;
+}
+
+.section-block-title.blue {
+  color: #60a5fa;
+}
 
 .detail-check-list,
 .detail-warn-list,
@@ -8040,9 +8085,23 @@ select option {
   color: #cbd5e1;
 }
 
-.icon-check-green { color: #4ade80; font-weight: 900; margin-right: 6px; }
-.icon-warn-red { color: #f87171; font-weight: 900; margin-right: 6px; }
-.icon-arrow-blue { color: #60a5fa; font-weight: 900; margin-right: 6px; }
+.icon-check-green {
+  color: #4ade80;
+  font-weight: 900;
+  margin-right: 6px;
+}
+
+.icon-warn-red {
+  color: #f87171;
+  font-weight: 900;
+  margin-right: 6px;
+}
+
+.icon-arrow-blue {
+  color: #60a5fa;
+  font-weight: 900;
+  margin-right: 6px;
+}
 
 .detail-actions-footer {
   display: grid;
@@ -8293,8 +8352,13 @@ select option {
   letter-spacing: 4px;
 }
 
-.star-fill { color: #fbbf24; }
-.star-empty { color: #475569; }
+.star-fill {
+  color: #fbbf24;
+}
+
+.star-empty {
+  color: #475569;
+}
 
 .keynote-grid-2col {
   display: grid;
@@ -8319,9 +8383,17 @@ select option {
   gap: 8px;
 }
 
-.green-text { color: #4ade80; }
-.yellow-text { color: #fbbf24; }
-.blue-text { color: #38bdf8; }
+.green-text {
+  color: #4ade80;
+}
+
+.yellow-text {
+  color: #fbbf24;
+}
+
+.blue-text {
+  color: #38bdf8;
+}
 
 .keynote-list {
   display: flex;
@@ -8331,8 +8403,15 @@ select option {
   line-height: 1.5;
 }
 
-.check-mark { color: #4ade80; font-weight: 900; }
-.warn-mark { color: #fbbf24; font-weight: 900; }
+.check-mark {
+  color: #4ade80;
+  font-weight: 900;
+}
+
+.warn-mark {
+  color: #fbbf24;
+  font-weight: 900;
+}
 
 .mvp-numbered-list {
   display: flex;
@@ -9153,12 +9232,12 @@ select option {
   border-radius: 50%;
 }
 
-input:checked + .switch-slider {
+input:checked+.switch-slider {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
-input:checked + .switch-slider:before {
+input:checked+.switch-slider:before {
   transform: translateX(16px);
 }
 
@@ -9237,9 +9316,20 @@ input:checked + .switch-slider:before {
   background: transparent;
 }
 
-.g-icon { color: #ea4335; font-weight: 900; }
-.n-icon { color: #ffffff; font-weight: 900; }
-.s-icon { color: #e01e5a; font-weight: 900; }
+.g-icon {
+  color: #ea4335;
+  font-weight: 900;
+}
+
+.n-icon {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.s-icon {
+  color: #e01e5a;
+  font-weight: 900;
+}
 
 .danger-btn {
   padding: 6px 12px;
@@ -9431,10 +9521,21 @@ input:checked + .switch-slider:before {
   border-radius: 10px;
 }
 
-.usage-bar-fill.purple { background: #c084fc; }
-.usage-bar-fill.blue { background: #3b82f6; }
-.usage-bar-fill.green { background: #4ade80; }
-.usage-bar-fill.yellow { background: #fbbf24; }
+.usage-bar-fill.purple {
+  background: #c084fc;
+}
+
+.usage-bar-fill.blue {
+  background: #3b82f6;
+}
+
+.usage-bar-fill.green {
+  background: #4ade80;
+}
+
+.usage-bar-fill.yellow {
+  background: #fbbf24;
+}
 
 /* About Widget */
 .about-rows-list {
@@ -9496,8 +9597,15 @@ input:checked + .switch-slider:before {
 }
 
 @keyframes fadeInModal {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .profile-modal-box {
@@ -9813,7 +9921,7 @@ input:checked + .switch-slider:before {
   border-radius: 20px;
   padding: 24px;
   margin-bottom: 28px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 .compare-selectors-row {
@@ -9900,8 +10008,13 @@ input:checked + .switch-slider:before {
   margin-bottom: 10px;
 }
 
-.changes-box-positive .changes-box-title { color: #4ade80; }
-.changes-box-negative .changes-box-title { color: #f87171; }
+.changes-box-positive .changes-box-title {
+  color: #4ade80;
+}
+
+.changes-box-negative .changes-box-title {
+  color: #f87171;
+}
 
 .changes-list {
   display: flex;
@@ -9999,5 +10112,3 @@ input:checked + .switch-slider:before {
 .version-timeline-scrollable::-webkit-scrollbar-thumb:hover {
   background: rgba(56, 189, 248, 0.65);
 }
-
-

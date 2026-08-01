@@ -46,37 +46,37 @@ export default function Dashboard({
 }) {
   const activeStartup = history[0]
     ? {
-        id: history[0].id,
-        name: history[0].ideaData?.name || 'VITALINK',
-        industry: history[0].ideaData?.industry || 'HealthTech',
-        description: history[0].ideaData?.description || 'An app that tells users medical history, allergies, diagnosis, etc. by scanning the QR code.',
-        score: history[0].overallScore || 8.4,
-        status: 'Ready for Board Review',
-        updatedAt: '2 Hours Ago',
-        raw: history[0],
-      }
+      id: history[0].id,
+      name: history[0].ideaData?.name || 'VITALINK',
+      industry: history[0].ideaData?.industry || 'HealthTech',
+      description: history[0].ideaData?.description || 'An app that tells users medical history, allergies, diagnosis, etc. by scanning the QR code.',
+      score: history[0].overallScore || 8.4,
+      status: 'Ready for Board Review',
+      updatedAt: '2 Hours Ago',
+      raw: history[0],
+    }
     : {
-        name: 'VITALINK',
-        industry: 'HealthTech',
-        description: 'An app that tells users medical history, allergies, diagnosis, etc. by scanning the QR code.',
-        score: 8.4,
-        status: 'Ready for Board Review',
-        updatedAt: '2 Hours Ago',
-      };
+      name: 'VITALINK',
+      industry: 'HealthTech',
+      description: 'An app that tells users medical history, allergies, diagnosis, etc. by scanning the QR code.',
+      score: 8.4,
+      status: 'Ready for Board Review',
+      updatedAt: '2 Hours Ago',
+    };
 
   const recentList = history.length > 0
     ? history.slice(0, 3).map((h, i) => ({
-        id: h.id,
-        name: h.ideaData?.name || 'Unnamed',
-        industry: h.ideaData?.industry || 'General',
-        iconName: RECENT_STARTUPS_DATA[i % 3].iconName,
-        iconColor: RECENT_STARTUPS_DATA[i % 3].iconColor,
-        score: h.overallScore || 8.4,
-        status: h.verdict || 'Approved',
-        statusColor: h.verdict === 'Approved' ? '#22c55e' : '#f59e0b',
-        lastMeeting: new Date(h.createdAt).toLocaleDateString(),
-        raw: h,
-      }))
+      id: h.id,
+      name: h.ideaData?.name || 'Unnamed',
+      industry: h.ideaData?.industry || 'General',
+      iconName: RECENT_STARTUPS_DATA[i % 3].iconName,
+      iconColor: RECENT_STARTUPS_DATA[i % 3].iconColor,
+      score: h.overallScore || 8.4,
+      status: h.verdict || 'Approved',
+      statusColor: h.verdict === 'Approved' ? '#22c55e' : '#f59e0b',
+      lastMeeting: new Date(h.createdAt).toLocaleDateString(),
+      raw: h,
+    }))
     : RECENT_STARTUPS_DATA;
 
   // Interactive Notifications state
@@ -252,7 +252,7 @@ export default function Dashboard({
                   {/* Hero Left Side: Mission Info */}
                   <div className="v2-hero-info">
                     <span className="v2-welcome-eyebrow">WELCOME BACK, {userName.toUpperCase()}</span>
-                    
+
                     <div className="v2-mission-title-group">
                       <span className="v2-mission-sub">Today's Mission</span>
                       <h1 className="v2-mission-heading">{activeStartup.name}</h1>

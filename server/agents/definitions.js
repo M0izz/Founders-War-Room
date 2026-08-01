@@ -393,14 +393,13 @@ Verdict: ${r.verdict}
   },
 };
 
-// ── Core agent keys (excludes Grim Reaper) ──────────────────────────────────
+// ── Core agent keys (excludes Grim Reaper & Chairman) ────────────────────────
 export const CORE_AGENT_KEYS = [
   'ceo',
   'cto',
   'investor',
-  'customer',
   'marketing',
-  'competitor',
+  'customer',
   'riskAdvisor',
 ];
 

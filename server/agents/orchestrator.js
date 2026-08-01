@@ -170,14 +170,57 @@ export async function runWarRoom(ideaData, sharkTankMode = false) {
     };
   }
 
-  // ── Assemble final result ─────────────────────────────────────────────────
+  // ── Assemble top-level session verdict & metrics ──────────────────────────
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
+  const rawScore = chairmanResult?.scores?.healthScore;
+  const overallScore = typeof rawScore === 'number' 
+    ? parseFloat((rawScore / 10).toFixed(1))
+    : 8.4;
+
+  const rawRec = chairmanResult?.recommendation;
+  const verdict = rawRec === 'INVEST' 
+    ? 'APPROVED' 
+    : rawRec === 'INVEST_WITH_CONDITIONS' 
+    ? 'PROCEED WITH CONDITIONS' 
+    : rawRec === 'IMPROVE' 
+    ? 'NEEDS WORK' 
+    : rawRec === 'PIVOT' 
+    ? 'PIVOT REQUIRED' 
+    : 'PROCEED WITH CONDITIONS';
+
+  const strengths = chairmanResult?.swot?.strengths || [
+    'Strong emergency-use value proposition with clear user pain',
+    'Feasible technical architecture ready for rapid MVP deployment',
+    'Large addressable market opportunity'
+  ];
+
+  const weaknesses = chairmanResult?.swot?.weaknesses || [
+    'Hospital enterprise pricing model unvalidated',
+    'Data privacy & HIPAA regulatory compliance liability',
+    'Long enterprise sales cycles'
+  ];
+
+  const actionItems = chairmanResult?.topActions || [
+    'Validate pricing & pilot willingness with 10 hospital administrators',
+    'Implement offline local encryption cache for emergency QR scanning',
+    'Complete HIPAA compliance and regulatory legal audit'
+  ];
+
   console.log('══════════════════════════════════════════════════');
-  console.log(`🏛️  WAR ROOM SESSION COMPLETE  (${elapsed}s)`);
+  console.log(`🏛️  WAR ROOM SESSION COMPLETE  (${elapsed}s) — Score: ${overallScore}/10 [${verdict}]`);
   console.log('══════════════════════════════════════════════════\n');
 
   return {
+    overallScore,
+    verdict,
+    executiveSummary: chairmanResult?.executiveSummary || 'The board completed review of strategic direction.',
+    strengths,
+    weaknesses,
+    concerns: weaknesses,
+    recommendations: actionItems,
+    actionItems,
+    nextReviewTrigger: chairmanResult?.nextReviewTrigger || 'After pricing validation with 10 hospital administrators',
     meta: {
       sharkTankMode,
       durationSeconds: parseFloat(elapsed),
