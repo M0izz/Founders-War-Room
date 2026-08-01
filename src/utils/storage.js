@@ -1,33 +1,97 @@
 const STORAGE_KEY = 'warroom_history';
 
-// Save a new analysis entry with extended schema
+function slugify(name) {
+  return 'startup_' + (name || 'unnamed').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+}
+
+// Save a new analysis entry with startupId + sessionId schema and delta calculation
 export function saveAnalysis(ideaData, analysisResult, sharkTankMode) {
   const history = getHistory();
-  const previousEntry = history[0] || null;
-  const versionNumber = previousEntry ? previousEntry.versionNumber + 1 : 1;
+  const startupId = slugify(ideaData?.name);
+  const previousVersions = history.filter((h) => h.startupId === startupId);
+  const previousEntry = previousVersions[0] || null;
+  const versionNumber = previousEntry ? (previousEntry.versionNumber || previousVersions.length) + 1 : 1;
+  const sessionId = 'sess_' + generateId();
+
+  // Compute whatChanged & addressedRecommendations
+  const whatChanged = computeWhatChanged(previousEntry?.ideaData, ideaData, previousEntry?.overallScore, analysisResult?.overallScore);
+  const addressedRecommendations = computeAddressedRecommendations(previousEntry?.analysisResult, ideaData, analysisResult);
+
   const entry = {
-    id: generateId(),
+    id: sessionId,
+    sessionId,
+    startupId,
     createdAt: new Date().toISOString(),
     versionNumber,
     ideaData,
     analysisResult,
+    whatChanged,
+    addressedRecommendations,
     founderNotes: '',
     tags: [],
     isFavorite: false,
     overallScore: analysisResult?.overallScore ?? null,
     verdict: analysisResult?.verdict ?? null,
-    previousVersionId: previousEntry ? previousEntry.id : null,
+    previousVersionId: previousEntry ? previousEntry.sessionId || previousEntry.id : null,
     sharkTankMode: !!sharkTankMode,
   };
+
   history.unshift(entry);
-  // Keep max 50 entries
   if (history.length > 50) history.pop();
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   } catch (e) {
     console.warn('Failed to save to localStorage:', e);
   }
+
   return entry;
+}
+
+function computeWhatChanged(oldIdea, newIdea, oldScore, newScore) {
+  if (!oldIdea) return ['Initial Board Session & Thesis Formulation'];
+
+  const changes = [];
+  if (oldIdea.targetMarket !== newIdea.targetMarket) {
+    changes.push(`Target Market updated to "${newIdea.targetMarket || 'Refined target market'}"`);
+  }
+  if (oldIdea.revenueModel !== newIdea.revenueModel) {
+    changes.push(`Monetization model updated to "${newIdea.revenueModel || 'New revenue model'}"`);
+  }
+  if (oldIdea.description !== newIdea.description) {
+    changes.push('Refined core value proposition and product description');
+  }
+
+  if (oldScore != null && newScore != null) {
+    const delta = (newScore - oldScore).toFixed(1);
+    if (delta > 0) changes.push(`Overall Board Score improved by +${delta} points`);
+    else if (delta < 0) changes.push(`Overall Board Score changed by ${delta} points`);
+  }
+
+  if (changes.length === 0) {
+    changes.push('Incorporated board review feedback and optimized execution strategy');
+  }
+
+  return changes;
+}
+
+function computeAddressedRecommendations(oldResult, newIdea, newResult) {
+  if (!oldResult) return ['Established baseline MVP specs & board recommendations'];
+
+  const prevActions = oldResult.actionItems || oldResult.recommendations || [];
+  if (prevActions.length === 0) return ['Addressed initial board concerns'];
+
+  // Cross-reference previous recommendations against new strengths/observations
+  const newStrengths = (newResult?.strengths || []).join(' ').toLowerCase();
+  const newObs = (newResult?.agentResults || []).flatMap((a) => a.keyObservations || []).join(' ').toLowerCase();
+  const newIdeaText = (newIdea?.description || '' + ' ' + (newIdea?.revenueModel || '')).toLowerCase();
+
+  const addressed = prevActions.filter((action) => {
+    const actLower = action.toLowerCase();
+    return newStrengths.includes(actLower.slice(0, 15)) || newObs.includes(actLower.slice(0, 15)) || newIdeaText.includes(actLower.slice(0, 15));
+  });
+
+  return addressed.length > 0 ? addressed : [prevActions[0] || 'Updated strategic alignment'];
 }
 
 export function getHistory() {

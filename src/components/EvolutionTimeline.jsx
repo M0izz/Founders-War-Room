@@ -424,32 +424,51 @@ export default function EvolutionTimeline({
 
     if (history && history.length > 0) {
       history.forEach((item) => {
-        const startupName = (item.title || item.ideaName || 'NEW_STARTUP').toUpperCase();
+        const rawName = item.ideaData?.name || item.name || item.title || 'VITALINK';
+        const startupName = rawName.toUpperCase();
+        
         if (!dict[startupName]) {
           dict[startupName] = {
-            id: startupName,
-            name: startupName,
-            category: item.category || 'Tech Startup',
+            id: item.startupId || `startup_${startupName.toLowerCase()}`,
+            name: rawName,
+            category: item.ideaData?.industry || 'HealthTech',
             versions: [],
           };
         }
 
-        const nextVerNum = dict[startupName].versions.length + 1;
+        const verNum = item.versionNumber || (dict[startupName].versions.length + 1);
+        const verTag = `V${verNum}`;
+
+        const whatChangedList = item.whatChanged || [
+          item.ideaData?.targetMarket ? `Target Market: ${item.ideaData.targetMarket}` : 'Refined strategic thesis',
+          item.ideaData?.revenueModel ? `Monetization: ${item.ideaData.revenueModel}` : 'Optimized execution roadmap'
+        ];
+
+        const positiveChangesList = item.addressedRecommendations || item.analysisResult?.strengths || [
+          'Addressed key board feedback',
+          'Strengthened core value proposition'
+        ];
+
+        const negativeChangesList = item.analysisResult?.weaknesses || item.analysisResult?.concerns || [
+          'Execution risks monitored by board'
+        ];
+
         dict[startupName].versions.unshift({
-          version: `V${nextVerNum}`,
-          isLatest: nextVerNum === 1,
-          score: item.score || 7.5,
-          date: item.date || 'Jul 31, 2026',
-          focus: item.focus || 'Board Execution Review',
-          targetAudience: item.targetAudience || 'Target Market Segment',
-          revenue: item.revenue || 'Subscription SaaS',
-          mvp: item.mvp || 'Core Product Feature',
-          risk: item.risk || 'Medium',
-          verdictStatus: item.verdictStatus || 'Proceed',
-          verdictQuote: `"${item.summary || 'Board review completed with actionable insights.'}"`,
-          whatChanged: item.keyChanges || ['Board analysis generated', 'Value proposition evaluated'],
-          positiveChanges: item.positives || ['Key strengths highlighted', 'Target audience defined'],
-          negativeChanges: item.negatives || ['Execution risks identified'],
+          version: verTag,
+          isLatest: dict[startupName].versions.length === 0,
+          score: item.overallScore || item.score || 8.4,
+          date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jul 31, 2026',
+          focus: item.ideaData?.industry ? `${item.ideaData.industry} Focus` : 'Board Execution Review',
+          targetAudience: item.ideaData?.targetMarket || 'Target Market Segment',
+          revenue: item.ideaData?.revenueModel || 'Subscription SaaS',
+          mvp: 'Core Product Feature',
+          risk: item.analysisResult?.weaknesses?.length > 2 ? 'High' : 'Medium',
+          verdictStatus: item.verdict || 'PROCEED WITH CONDITIONS',
+          verdictQuote: `"${item.analysisResult?.executiveSummary || item.executiveSummary || 'Board review completed with actionable insights.'}"`,
+          whatChanged: whatChangedList,
+          positiveChanges: positiveChangesList,
+          negativeChanges: negativeChangesList,
+          rawSession: item,
         });
       });
     }
