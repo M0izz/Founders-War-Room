@@ -314,32 +314,49 @@ export default function ReportsView({
   const allReports = [...DEFAULT_REPORTS_LIST];
   if (history && history.length > 0) {
     history.forEach((h, idx) => {
-      if (!allReports.find((r) => r.id === h.id)) {
+      if (!allReports.find((r) => r.id === h.id || r.id === h.sessionId)) {
+        const rawActions = h.analysisResult?.actionItems || h.analysisResult?.recommendations || [];
+        const formattedActions = rawActions.map((act, i) => ({
+          id: `act-${h.id || idx}-${i}`,
+          code: String(i + 1).padStart(2, '0'),
+          title: act,
+          desc: 'Required action item identified by the board before next review.',
+          priority: i === 0 ? 'HIGH' : 'MEDIUM',
+        }));
+
+        const rawStrengths = h.analysisResult?.strengths || [];
+        const rawWeaknesses = h.analysisResult?.weaknesses || h.analysisResult?.concerns || [];
+        const keyFindings = [
+          ...rawStrengths.slice(0, 2).map((s) => ({ text: s, isPositive: true })),
+          ...rawWeaknesses.slice(0, 2).map((w) => ({ text: w, isPositive: false })),
+        ];
+
         allReports.unshift({
-          id: h.id || `hist-${idx}`,
-          name: h.ideaData?.name || 'MY STARTUP',
-          subtitle: 'BOARD REVIEW',
-          industry: h.ideaData?.industry || 'Tech',
-          date: 'Recent Session',
-          session: `Board Session #${history.length - idx}`,
-          score: h.overallScore || 8.0,
-          scoreStatus: (h.overallScore || 8.0) >= 8.0 ? 'STRONG' : 'MODERATE',
-          verdictStatus: (h.overallScore || 8.0) >= 8.0 ? 'APPROVED WITH CONDITIONS' : 'NEEDS WORK',
+          id: h.sessionId || h.id || `hist-${idx}`,
+          name: h.ideaData?.name || 'VITALINK',
+          subtitle: `BOARD REVIEW V${h.versionNumber || (history.length - idx)}`,
+          industry: h.ideaData?.industry || 'HealthTech',
+          date: h.createdAt ? new Date(h.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'July 31, 2026',
+          session: `Board Session #${h.versionNumber || (history.length - idx)}`,
+          score: h.overallScore || 8.4,
+          scoreStatus: (h.overallScore || 8.4) >= 8.0 ? 'STRONG' : 'MODERATE',
+          verdictStatus: h.verdict || 'PROCEED WITH CONDITIONS',
           verdictQuote: h.analysisResult?.executiveSummary || 'Board completed review of strategic direction.',
-          tags: ['Strategy', 'GTM', 'Execution'],
+          tags: [h.ideaData?.industry || 'HealthTech', 'Strategy', 'Board Verdict'],
           executiveSummary: h.analysisResult?.executiveSummary || 'The board evaluated startup readiness across 8 key dimensions.',
           verdictGrid: [
-            { name: 'PRODUCT', status: 'Strong', level: '🟢', color: '#22c55e' },
-            { name: 'MARKET', status: 'Strong', level: '🟢', color: '#22c55e' },
-            { name: 'MONETIZATION', status: 'Needs Work', level: '🟡', color: '#f59e0b' },
-            { name: 'EXECUTION', status: 'Moderate', level: '🟡', color: '#f59e0b' },
-            { name: 'RISK', status: 'Moderate', level: '🟡', color: '#f59e0b' },
+            { name: 'VISION', status: 'Strong', level: '🟢', color: '#22c55e' },
+            { name: 'FEASIBILITY', status: 'Strong', level: '🟢', color: '#22c55e' },
+            { name: 'VIABILITY', status: 'Moderate', level: '🟡', color: '#f59e0b' },
+            { name: 'GTM', status: 'Moderate', level: '🟡', color: '#f59e0b' },
+            { name: 'RISK', status: 'High Risk', level: '🔴', color: '#f87171' },
           ],
           perspectives: h.analysisResult?.agentPerspectives || DEFAULT_REPORTS_LIST[0].perspectives,
           debates: h.analysisResult?.debates || DEFAULT_REPORTS_LIST[0].debates,
-          keyFindings: DEFAULT_REPORTS_LIST[0].keyFindings,
-          nextActions: DEFAULT_REPORTS_LIST[0].nextActions,
+          keyFindings: keyFindings.length > 0 ? keyFindings : DEFAULT_REPORTS_LIST[0].keyFindings,
+          nextActions: formattedActions.length > 0 ? formattedActions : DEFAULT_REPORTS_LIST[0].nextActions,
           scoreBreakdown: DEFAULT_REPORTS_LIST[0].scoreBreakdown,
+          rawSession: h,
         });
       }
     });
