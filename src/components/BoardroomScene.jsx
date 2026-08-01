@@ -75,6 +75,26 @@ export default function BoardroomScene({
   // Easter Egg checks
   const isCatIdea = ideaData?.name?.toLowerCase().includes('cat') || ideaData?.description?.toLowerCase().includes('cat') || ideaData?.description?.toLowerCase().includes('uber for cats');
 
+  // Extract dynamic agent quotes from result object
+  const agentMap = {};
+  if (result?.agentResults && Array.isArray(result.agentResults)) {
+    result.agentResults.forEach((a) => {
+      if (a.key) agentMap[a.key] = a;
+      if (a.agentName) agentMap[a.agentName.toLowerCase().replace(/\s+/g, '')] = a;
+    });
+  }
+
+  const ceoQuote = agentMap['ceo']?.verdict || `This startup idea addresses a critical gap in ${ideaData?.industry || 'the market'} with strong category-defining potential.`;
+  const investorQuote = agentMap['investor']?.verdict || 'The initial customer acquisition cost is high, but the unit economics scale gracefully at enterprise level.';
+  const marketingQuote = agentMap['marketing']?.verdict || 'We need an organic viral loop. Pivot directly to strategic distribution channels.';
+  const ctoQuote = agentMap['cto']?.verdict || 'Technically sound architecture. We can deploy the initial core MVP in under 90 days.';
+  const customerQuote = agentMap['customer']?.verdict || 'Willingness to pay is high if onboarding friction is zero and security is guaranteed.';
+  const riskQuote = agentMap['riskadvisor']?.verdict || agentMap['risk']?.verdict || 'Regulatory compliance and data protection landmines must be cleared before public rollout.';
+  const reaperQuote = result?.grimReaper?.deathSentence || 'This startup dies in Year 2 if incumbent platform players copy your primary hook as a free feature.';
+  const chairmanQuote = result?.executiveSummary 
+    ? `${result.executiveSummary} Final Score: ${result.overallScore || 8.4}/10 (${result.verdict || 'PROCEED WITH CONDITIONS'}).`
+    : `Quorum reached. The board approves conditional execution. Final Overall Score: ${result?.overallScore || 8.4}/10.`;
+
   const debateTimeline = [
     {
       speaker: 'CEO',
@@ -82,7 +102,7 @@ export default function BoardroomScene({
       color: '#3b82f6',
       iconName: 'ceo',
       time: '10:42 AM',
-      quote: `This startup idea addresses a critical gap in ${ideaData?.industry || 'the market'} with strong category-defining potential.`,
+      quote: ceoQuote,
     },
     {
       speaker: 'Investor',
@@ -90,7 +110,7 @@ export default function BoardroomScene({
       color: '#fbbf24',
       iconName: 'investor',
       time: '10:43 AM',
-      quote: isCatIdea ? "I'd invest... emotionally." : 'The initial customer acquisition cost is high, but the unit economics scale gracefully at enterprise level.',
+      quote: isCatIdea ? "I'd invest... emotionally." : investorQuote,
     },
     {
       speaker: 'Marketing',
@@ -98,7 +118,7 @@ export default function BoardroomScene({
       color: '#c084fc',
       iconName: 'marketing',
       time: '10:43 AM',
-      quote: 'We need an organic viral loop. Pivot directly to B2B partnership distribution channels immediately.',
+      quote: marketingQuote,
     },
     {
       speaker: 'CTO',
@@ -106,7 +126,7 @@ export default function BoardroomScene({
       color: '#38bdf8',
       iconName: 'cto',
       time: '10:44 AM',
-      quote: 'Technically sound architecture. We can deploy the initial core MVP in under 90 days.',
+      quote: ctoQuote,
     },
     {
       speaker: 'Customer',
@@ -114,7 +134,7 @@ export default function BoardroomScene({
       color: '#4ade80',
       iconName: 'customer',
       time: '10:44 AM',
-      quote: 'Willingness to pay is high if onboarding friction is zero and security is guaranteed.',
+      quote: customerQuote,
     },
     {
       speaker: 'Risk Advisor',
@@ -122,7 +142,7 @@ export default function BoardroomScene({
       color: '#fb923c',
       iconName: 'risk',
       time: '10:45 AM',
-      quote: 'Regulatory compliance and data protection landmines must be cleared before public rollout.',
+      quote: riskQuote,
     },
     {
       speaker: 'Grim Reaper',
@@ -130,9 +150,7 @@ export default function BoardroomScene({
       color: '#f87171',
       iconName: 'reaper',
       time: '10:45 AM',
-      quote: isCatIdea
-        ? "Nine lives still won't save this business model."
-        : 'This startup dies in Year 2 if incumbent platform players copy your primary hook as a free feature.',
+      quote: isCatIdea ? "Nine lives still won't save this business model." : reaperQuote,
     },
     {
       speaker: 'Chairman',
@@ -140,7 +158,7 @@ export default function BoardroomScene({
       color: '#ffffff',
       iconName: 'chairman',
       time: '10:46 AM',
-      quote: `Quorum reached. The board approves conditional execution. Final Overall Score: ${result?.overallScore || 8.7}/10.`,
+      quote: chairmanQuote,
     },
   ];
 
