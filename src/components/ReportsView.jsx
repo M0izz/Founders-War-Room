@@ -146,6 +146,14 @@ export default function ReportsView({
     window.print();
   };
 
+  // Interactive Notifications state
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationsList, setNotificationsList] = useState([
+    { id: 1, title: 'Board Review Complete', desc: 'VITALINK V6 scored 8.4/10 with strong commercial traction.', time: '10m ago', type: 'info' },
+    { id: 2, title: 'Risk Alert Flagged', desc: 'Grim Reaper flagged unit economics for B2C SaaS model.', time: '1h ago', type: 'risk' },
+    { id: 3, title: 'Roster Active', desc: 'All 8 Executive Board AI Agents are operational.', time: '3h ago', type: 'info' },
+  ]);
+
   return (
     <div className="v2-dashboard-page" onClick={() => setOpenRecentMenu(null)}>
       {/* Background Grid & Glow */}
@@ -162,17 +170,73 @@ export default function ReportsView({
           </div>
         </div>
 
-        <div className="v2-header-actions">
-          <button className="v2-icon-btn" title="Power Status">
-            <AppIcon name="zap" size={16} />
-          </button>
-          <button className="v2-icon-btn" title="Notifications">
+        <div className="v2-header-actions" style={{ position: 'relative' }}>
+          <button
+            className="v2-icon-btn"
+            title="Notifications"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowNotifications(!showNotifications);
+            }}
+            style={{ position: 'relative' }}
+          >
             <AppIcon name="bell" size={16} />
-            <span className="v2-notification-dot" />
+            {notificationsList.length > 0 && <span className="v2-notification-dot" />}
           </button>
-          <button className="v2-icon-btn" title="Settings" onClick={() => onNavigate && onNavigate('settings')}>
-            <AppIcon name="cto" size={16} />
-          </button>
+
+          {/* Interactive Notifications Popover */}
+          {showNotifications && (
+            <div className="glass-panel" style={{
+              position: 'absolute',
+              top: '44px',
+              right: '90px',
+              width: '320px',
+              background: 'rgba(13, 21, 41, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '16px',
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)',
+              zIndex: 1000,
+              padding: '16px',
+              backdropFilter: 'blur(12px)'
+            }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AppIcon name="bell" size={16} color="#fbbf24" />
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff' }}>Notifications</span>
+                </div>
+                <button
+                  style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                  onClick={() => setNotificationsList([])}
+                >
+                  Clear All
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '280px', overflowY: 'auto' }}>
+                {notificationsList.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: '#94a3b8', fontSize: '0.82rem' }}>
+                    No new notifications
+                  </div>
+                ) : (
+                  notificationsList.map((n) => (
+                    <div key={n.id} style={{
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      borderLeft: n.type === 'risk' ? '3px solid #f87171' : '3px solid #38bdf8'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: n.type === 'risk' ? '#f87171' : '#e2e8f0' }}>{n.title}</span>
+                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{n.time}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8', lineHeight: '1.4' }}>{n.desc}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="v2-user-dropdown-pill">
             <div className="v2-user-avatar">
               <AppIcon name="user" size={14} color="#fff" />
@@ -219,12 +283,28 @@ export default function ReportsView({
             </button>
           </nav>
 
-          <div className="v2-upgrade-box">
-            <div className="upgrade-title-row">
-              <AppIcon name="crown" size={16} color="#fbbf24" />
-              <span className="upgrade-title">Upgrade Plan</span>
+          {/* Constant Sidebar Widgets */}
+          <div className="v2-sidebar-widgets-container" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="v2-upgrade-box">
+              <div className="upgrade-title-row">
+                <AppIcon name="crown" size={16} color="#c084fc" />
+                <span className="upgrade-title">Upgrade Plan</span>
+              </div>
+              <span className="upgrade-subtext">Unlock advanced features and more credits. &gt;</span>
             </div>
-            <span className="upgrade-subtext">Unlock advanced features &gt;</span>
+
+            <div className="v2-upgrade-box" style={{ background: 'rgba(13, 21, 41, 0.85)' }}>
+              <div style={{ fontSize: '0.82rem', color: '#ffffff', fontWeight: 800, marginBottom: '4px' }}>
+                AI Credits Used
+              </div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#e2e8f0', marginBottom: '6px' }}>
+                8,450 / 10,000
+              </div>
+              <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
+                <div style={{ width: '84.5%', height: '100%', background: 'linear-gradient(90deg, #c084fc, #38bdf8)', borderRadius: '10px' }} />
+              </div>
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginTop: '6px' }}>Reset on Aug 15, 2026</span>
+            </div>
           </div>
         </aside>
 
