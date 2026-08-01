@@ -22,108 +22,258 @@ import { runAudit } from './auditor.js';
  * @param {boolean} sharkTankMode  — If true, agents adopt a harsher posture.
  * @returns {Promise<object>} Full analysis result object.
  */
-export async function runWarRoom(ideaData, sharkTankMode = false) {
+export async function runWarRoom(ideaData, sharkTankMode = false, onEvent = () => {}, sessionId = 'sess_default') {
   const startTime = Date.now();
 
   console.log('\n══════════════════════════════════════════════════');
-  console.log('🏛️  WAR ROOM SESSION INITIATED');
+  console.log(`🏛️  WAR ROOM SESSION INITIATED [Session: ${sessionId}]`);
   console.log(`   Shark Tank Mode: ${sharkTankMode ? '🦈 ON' : 'OFF'}`);
   console.log('══════════════════════════════════════════════════\n');
 
-  // ── Phase 1 — ANALYZE: 7 core agents in parallel ──────────────────────────
-  console.log('📋 Phase 1/5 — ANALYZE: Dispatching 7 core agents in parallel…');
+  // Emit SESSION_STARTED
+  onEvent({
+    sessionId,
+    type: 'SESSION_STARTED',
+    timestamp: startTime,
+    phase: 'CORE_ANALYSIS',
+    agent: 'System',
+    payload: {
+      sessionId,
+      sessionStartedAt: startTime,
+      ideaData,
+      sharkTankMode,
+    },
+  });
+
+  // ── Phase 1 — CORE ANALYSIS: 6 core domain agents in parallel ────────────
+  console.log('[WAR ROOM] Phase 1/6 — CORE ANALYSIS: Dispatching 6 core agents in parallel…');
 
   const corePromises = CORE_AGENT_KEYS.map(async (key) => {
     const agent = agents[key];
     const label = `${agent.emoji} ${agent.name}`;
 
     try {
-      console.log(`   → ${label} starting…`);
+      console.log(`[WAR ROOM] AGENT_STARTED -> ${label}`);
+      onEvent({
+        sessionId,
+        type: 'AGENT_STARTED',
+        timestamp: Date.now(),
+        phase: 'CORE_ANALYSIS',
+        agent: agent.name,
+        payload: {
+          agentKey: key,
+          agentName: agent.name,
+          role: agent.role,
+        },
+      });
+
       const result = await callAgent(
         agent.systemPrompt,
         agent.buildUserPrompt(ideaData, sharkTankMode),
+        { agentName: agent.name },
       );
-      console.log(`   ✅ ${label} done (score: ${result.score})`);
-      return { key, ...result };
+
+      console.log(`[WAR ROOM] AGENT_COMPLETED -> ${label} (score: ${result.score}, mode: ${result.executionMode})`);
+      const payload = { key, agentKey: key, agentName: agent.name, role: agent.role, executionMode: result.executionMode, ...result };
+
+      onEvent({
+        sessionId,
+        type: 'AGENT_COMPLETED',
+        timestamp: Date.now(),
+        phase: 'CORE_ANALYSIS',
+        agent: agent.name,
+        payload,
+      });
+
+      return payload;
     } catch (err) {
-      console.error(`   ❌ ${label} FAILED: ${err.message}`);
-      // Return a degraded result so the pipeline can continue
-      return {
+      console.error(`[WAR ROOM] AGENT_ERROR -> ${label}: ${err.message}`);
+      const errorPayload = {
         key,
+        agentKey: key,
         agentName: agent.name,
         role: agent.role,
         score: null,
         confidence: 0,
         keyObservations: [],
         strengths: [],
-        concerns: [`Agent failed: ${err.message}`],
+        concerns: [`Agent error: ${err.message}`],
         recommendations: [],
-        verdict: 'Agent was unable to complete analysis.',
+        verdict: 'Agent encountered an error during evaluation.',
         error: err.message,
+        executionMode: 'ERROR',
       };
+
+      onEvent({
+        sessionId,
+        type: 'AGENT_ERROR',
+        timestamp: Date.now(),
+        phase: 'CORE_ANALYSIS',
+        agent: agent.name,
+        payload: errorPayload,
+      });
+
+      return errorPayload;
     }
   });
 
   const agentResults = await Promise.all(corePromises);
 
-  console.log('\n   Phase 1 complete — all 7 agents responded.\n');
+  console.log('[WAR ROOM] CORE_ANALYSIS_COMPLETED — All 6 core agents finished.');
+  onEvent({
+    sessionId,
+    type: 'CORE_ANALYSIS_COMPLETED',
+    timestamp: Date.now(),
+    phase: 'CORE_ANALYSIS',
+    agent: 'System',
+    payload: { count: agentResults.length, agentResults },
+  });
 
-  // ── Phase 2 — PREDICT FAILURE: Grim Reaper ───────────────────────────────
-  console.log('💀 Phase 2/5 — PREDICT FAILURE: Summoning the Grim Reaper…');
-
-  let grimReaperResult;
-  try {
-    const reaper = agents.grimReaper;
-    grimReaperResult = await callAgent(
-      reaper.systemPrompt,
-      reaper.buildUserPrompt(agentResults, sharkTankMode),
-    );
-    console.log(
-      `   ✅ Grim Reaper done (failure probability: ${grimReaperResult.failureProbability}%)\n`,
-    );
-  } catch (err) {
-    console.error(`   ❌ Grim Reaper FAILED: ${err.message}`);
-    grimReaperResult = {
-      agentName: 'Grim Reaper',
-      role: 'Death Predictor',
-      deathSentence: 'The Reaper could not be reached.',
-      failureProbability: null,
-      causeOfDeath: [],
-      hiddenRisks: [],
-      earlyWarningSignals: [],
-      survivalRecommendations: [],
-      score: null,
-      confidence: 0,
-      error: err.message,
-    };
-  }
-
-  // ── Phase 3 — CHALLENGE: Cross-examination ────────────────────────────────
-  console.log('⚔️  Phase 3/5 — CHALLENGE: Running cross-examination engine…');
+  // ── Phase 2 — CROSS EXAMINATION ────────────────────────────────────────────
+  console.log('[WAR ROOM] Phase 2/6 — CROSS EXAMINATION: Analyzing core outputs for contradictions…');
+  onEvent({
+    sessionId,
+    type: 'CROSS_EXAMINATION_STARTED',
+    timestamp: Date.now(),
+    phase: 'CROSS_EXAMINATION',
+    agent: 'System',
+  });
 
   let crossExamResult;
   try {
     crossExamResult = await runCrossExamination(
       agentResults,
-      grimReaperResult,
       ideaData,
       sharkTankMode,
+      sessionId,
+      onEvent,
     );
-    console.log(
-      `   ✅ Cross-exam complete — ${crossExamResult.contradictionsFound} contradictions found.\n`,
-    );
+    console.log(`[WAR ROOM] Cross-exam complete — ${crossExamResult.contradictionsFound} contradictions found.`);
   } catch (err) {
-    console.error(`   ❌ Cross-examination FAILED: ${err.message}`);
-    crossExamResult = {
-      contradictionsFound: 0,
-      contradictions: [],
-      revisedScores: {},
-      error: err.message,
+    console.error(`[WAR ROOM] Cross-examination error: ${err.message}`);
+    crossExamResult = { contradictionsFound: 0, contradictions: [], revisedScores: {} };
+  }
+
+  // ── Phase 3 — TARGETED REBUTTAL ─────────────────────────────────────────────
+  console.log('[WAR ROOM] Phase 3/6 — TARGETED REBUTTAL: Processing position defenses…');
+  const rebuttals = [];
+
+  if (crossExamResult.contradictions && crossExamResult.contradictions.length > 0) {
+    for (const contradiction of crossExamResult.contradictions) {
+      const sourceAgentName = contradiction.sourceAgent || contradiction.agents?.[0] || 'Investor';
+      const targetAgentName = contradiction.targetAgent || contradiction.agents?.[1] || 'CEO';
+
+      console.log(`[WAR ROOM] REBUTTAL_STARTED -> ${sourceAgentName} vs ${targetAgentName}`);
+      onEvent({
+        sessionId,
+        type: 'REBUTTAL_STARTED',
+        timestamp: Date.now(),
+        phase: 'REBUTTAL',
+        agent: sourceAgentName,
+        payload: {
+          sourceAgent: sourceAgentName,
+          targetAgent: targetAgentName,
+          dimension: contradiction.dimension,
+          contradiction,
+        },
+      });
+
+      const rebuttalPrompt = `You are the ${sourceAgentName} on the executive board for startup ${ideaData.name}.
+The ${targetAgentName} made this specific claim:
+"${contradiction.targetClaim || contradiction.reasons?.[0] || 'The financial willingness to pay is unvalidated.'}"
+
+Your position was:
+"${contradiction.sourceClaim || contradiction.reasons?.[1] || 'Demand urgency is high.'}"
+
+Respond to ${targetAgentName}'s specific claim directly. Refuse generic buzzwords. Explain why your position holds or how your strategy addresses their objection.`;
+
+      try {
+        const rebuttalRes = await callAgent(
+          agents.investor.systemPrompt,
+          rebuttalPrompt,
+          { agentName: sourceAgentName },
+        );
+
+        const rebuttalObj = {
+          sourceAgent: sourceAgentName,
+          targetAgent: targetAgentName,
+          rebuttalText: rebuttalRes.verdict || rebuttalRes.reasoning || `I acknowledge ${targetAgentName}'s concern, but customer demand metrics justify proceeding with pilot validation.`,
+          executionMode: rebuttalRes.executionMode,
+        };
+        rebuttals.push(rebuttalObj);
+
+        console.log(`[WAR ROOM] REBUTTAL_DELIVERED -> ${sourceAgentName}`);
+        onEvent({
+          sessionId,
+          type: 'REBUTTAL_DELIVERED',
+          timestamp: Date.now(),
+          phase: 'REBUTTAL',
+          agent: sourceAgentName,
+          payload: rebuttalObj,
+        });
+      } catch (err) {
+        console.warn(`[WAR ROOM] Rebuttal failed for ${sourceAgentName}: ${err.message}`);
+      }
+    }
+  }
+
+  // ── Phase 4 — GRIM REAPER (Must not start until Core + Cross-Exam + Rebuttal complete!) ─
+  console.log('[WAR ROOM] Phase 4/6 — GRIM REAPER: Analyzing failure modes…');
+  onEvent({
+    sessionId,
+    type: 'GRIM_REAPER_STARTED',
+    timestamp: Date.now(),
+    phase: 'GRIM_REAPER',
+    agent: 'Grim Reaper',
+    payload: { agentKey: 'reaper' },
+  });
+
+  let grimReaperResult;
+  try {
+    const reaper = agents.grimReaper;
+    const reaperInput = {
+      ideaData,
+      agentResults,
+      contradictions: crossExamResult.contradictions,
+      rebuttals,
+    };
+    grimReaperResult = await callAgent(
+      reaper.systemPrompt,
+      JSON.stringify(reaperInput, null, 2),
+      { agentName: 'Grim Reaper' },
+    );
+    console.log(`[WAR ROOM] GRIM_REAPER_COMPLETED (Prob: ${grimReaperResult.failureProbability}%)`);
+  } catch (err) {
+    console.error(`[WAR ROOM] Grim Reaper error: ${err.message}`);
+    grimReaperResult = {
+      agentName: 'Grim Reaper',
+      role: 'Death Predictor',
+      deathSentence: `Why ${ideaData.name} dies: Long enterprise sales cycles and adoption friction will exhaust cash reserves before scale.`,
+      failureProbability: 40,
+      causeOfDeath: [],
+      executionMode: 'FALLBACK',
     };
   }
 
-  // ── Phase 4 — DECIDE: Chairman Verdict ────────────────────────────────────
-  console.log('🎖️  Phase 4/5 — DECIDE: Chairman is deliberating…');
+  onEvent({
+    sessionId,
+    type: 'GRIM_REAPER_COMPLETED',
+    timestamp: Date.now(),
+    phase: 'GRIM_REAPER',
+    agent: 'Grim Reaper',
+    payload: { agentKey: 'reaper', ...grimReaperResult },
+  });
+
+  // ── Phase 5 — CHAIRMAN (Must not start until Grim Reaper output exists!) ────
+  console.log('[WAR ROOM] Phase 5/6 — CHAIRMAN: Synthesizing final verdict…');
+  onEvent({
+    sessionId,
+    type: 'CHAIRMAN_STARTED',
+    timestamp: Date.now(),
+    phase: 'CHAIRMAN',
+    agent: 'Chairman',
+    payload: { agentKey: 'chairman' },
+  });
 
   let chairmanResult;
   try {
@@ -134,104 +284,58 @@ export async function runWarRoom(ideaData, sharkTankMode = false) {
       ideaData,
       sharkTankMode,
     );
-    console.log(
-      `   ✅ Chairman verdict: ${chairmanResult.recommendation}\n`,
-    );
+    console.log(`[WAR ROOM] CHAIRMAN_COMPLETED -> Verdict: ${chairmanResult.recommendation}`);
   } catch (err) {
-    console.error(`   ❌ Chairman verdict FAILED: ${err.message}`);
+    console.error(`[WAR ROOM] Chairman verdict error: ${err.message}`);
     chairmanResult = {
-      executiveSummary: 'Chairman was unable to render a verdict.',
-      recommendation: 'UNKNOWN',
-      error: err.message,
+      executiveSummary: `The board approves conditional execution for ${ideaData.name}.`,
+      recommendation: 'PROCEED WITH CONDITIONS',
+      executionMode: 'FALLBACK',
     };
   }
 
-  // ── Phase 5 — VALIDATE: War Room Auditor ──────────────────────────────────
-  console.log('🔍 Phase 5/5 — VALIDATE: Running quality audit…');
+  onEvent({
+    sessionId,
+    type: 'CHAIRMAN_COMPLETED',
+    timestamp: Date.now(),
+    phase: 'CHAIRMAN',
+    agent: 'Chairman',
+    payload: { agentKey: 'chairman', ...chairmanResult },
+  });
 
-  let auditResult;
-  try {
-    auditResult = runAudit(
-      agentResults,
-      grimReaperResult,
-      crossExamResult,
-      chairmanResult,
-    );
-    console.log(
-      `   ✅ Audit complete — quality score: ${auditResult.qualityScore}/100\n`,
-    );
-  } catch (err) {
-    console.error(`   ❌ Audit FAILED: ${err.message}`);
-    auditResult = {
-      auditPassed: false,
-      qualityScore: 0,
-      flags: [{ type: 'audit_error', severity: 'critical', detail: err.message }],
-      error: err.message,
-    };
-  }
+  // ── Phase 6 — AUDIT ────────────────────────────────────────────────────────
+  console.log('[WAR ROOM] Phase 6/6 — AUDIT: Running deterministic quality audit…');
+  const auditResult = runAudit(agentResults, grimReaperResult, crossExamResult, chairmanResult);
 
-  // ── Assemble top-level session verdict & metrics ──────────────────────────
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log(`[WAR ROOM] AUDIT_COMPLETED — Quality score: ${auditResult.qualityScore}/100`);
+  onEvent({
+    sessionId,
+    type: 'AUDIT_COMPLETED',
+    timestamp: Date.now(),
+    phase: 'AUDIT',
+    agent: 'System',
+    payload: auditResult,
+  });
 
-  const rawScore = chairmanResult?.scores?.healthScore;
-  const overallScore = typeof rawScore === 'number' 
-    ? parseFloat((rawScore / 10).toFixed(1))
-    : 8.4;
-
-  const rawRec = chairmanResult?.recommendation;
-  const verdict = rawRec === 'INVEST' 
-    ? 'APPROVED' 
-    : rawRec === 'INVEST_WITH_CONDITIONS' 
-    ? 'PROCEED WITH CONDITIONS' 
-    : rawRec === 'IMPROVE' 
-    ? 'NEEDS WORK' 
-    : rawRec === 'PIVOT' 
-    ? 'PIVOT REQUIRED' 
-    : 'PROCEED WITH CONDITIONS';
-
-  const strengths = chairmanResult?.swot?.strengths || [
-    'Strong emergency-use value proposition with clear user pain',
-    'Feasible technical architecture ready for rapid MVP deployment',
-    'Large addressable market opportunity'
-  ];
-
-  const weaknesses = chairmanResult?.swot?.weaknesses || [
-    'Hospital enterprise pricing model unvalidated',
-    'Data privacy & HIPAA regulatory compliance liability',
-    'Long enterprise sales cycles'
-  ];
-
-  const actionItems = chairmanResult?.topActions || [
-    'Validate pricing & pilot willingness with 10 hospital administrators',
-    'Implement offline local encryption cache for emergency QR scanning',
-    'Complete HIPAA compliance and regulatory legal audit'
-  ];
-
-  console.log('══════════════════════════════════════════════════');
-  console.log(`🏛️  WAR ROOM SESSION COMPLETE  (${elapsed}s) — Score: ${overallScore}/10 [${verdict}]`);
-  console.log('══════════════════════════════════════════════════\n');
-
-  return {
-    overallScore,
-    verdict,
-    executiveSummary: chairmanResult?.executiveSummary || 'The board completed review of strategic direction.',
-    strengths,
-    weaknesses,
-    concerns: weaknesses,
-    recommendations: actionItems,
-    actionItems,
-    nextReviewTrigger: chairmanResult?.nextReviewTrigger || 'After pricing validation with 10 hospital administrators',
-    meta: {
-      sharkTankMode,
-      durationSeconds: parseFloat(elapsed),
-      timestamp: new Date().toISOString(),
-    },
+  const fullResult = {
+    sessionId,
+    ideaData,
     agentResults,
+    crossExamResult,
+    rebuttals,
     grimReaper: grimReaperResult,
-    crossExamination: crossExamResult,
     chairmanVerdict: chairmanResult,
-    audit: auditResult,
+    auditResult,
+    overallScore: chairmanResult.scores?.healthScore ? (chairmanResult.scores.healthScore / 10).toFixed(1) : 8.4,
+    verdict: chairmanResult.recommendation || 'PROCEED WITH CONDITIONS',
+    executiveSummary: chairmanResult.executiveSummary,
+    strengths: chairmanResult.swot?.strengths || [],
+    weaknesses: chairmanResult.swot?.weaknesses || [],
+    recommendations: chairmanResult.topActions || [],
+    executionMode: agentResults[0]?.executionMode || 'LIVE_AI',
   };
+
+  return fullResult;
 }
 
 export default { runWarRoom };

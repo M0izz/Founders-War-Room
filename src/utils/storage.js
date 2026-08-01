@@ -4,48 +4,106 @@ function slugify(name) {
   return 'startup_' + (name || 'unnamed').toLowerCase().replace(/[^a-z0-9]+/g, '_');
 }
 
-// Save a new analysis entry with startupId + sessionId schema and delta calculation
-export function saveAnalysis(ideaData, analysisResult, sharkTankMode) {
+// Create and initialize a new active session
+// userId: the Firebase UID of the authenticated user (null for anonymous/legacy sessions)
+export function createSession(ideaData, sharkTankMode = false, userId = null) {
   const history = getHistory();
   const startupId = slugify(ideaData?.name);
   const previousVersions = history.filter((h) => h.startupId === startupId);
   const previousEntry = previousVersions[0] || null;
   const versionNumber = previousEntry ? (previousEntry.versionNumber || previousVersions.length) + 1 : 1;
   const sessionId = 'sess_' + generateId();
+  const now = Date.now();
 
-  // Compute whatChanged & addressedRecommendations
-  const whatChanged = computeWhatChanged(previousEntry?.ideaData, ideaData, previousEntry?.overallScore, analysisResult?.overallScore);
-  const addressedRecommendations = computeAddressedRecommendations(previousEntry?.analysisResult, ideaData, analysisResult);
-
-  const entry = {
+  const session = {
     id: sessionId,
     sessionId,
     startupId,
-    createdAt: new Date().toISOString(),
+    userId,             // Firebase UID — null for legacy/anonymous sessions
+    isLegacy: !userId,  // true = stored locally only, not linked to an account
+    createdAt: new Date(now).toISOString(),
+    sessionStartedAt: now,
+    completedAt: null,
+    status: 'RUNNING', // 'RUNNING' | 'COMPLETED' | 'FAILED'
     versionNumber,
     ideaData,
-    analysisResult,
-    whatChanged,
-    addressedRecommendations,
+    analysisResult: null,
+    events: [],
+    whatChanged: computeWhatChanged(previousEntry?.ideaData, ideaData, previousEntry?.overallScore, null),
+    addressedRecommendations: [],
     founderNotes: '',
     tags: [],
     isFavorite: false,
-    overallScore: analysisResult?.overallScore ?? null,
-    verdict: analysisResult?.verdict ?? null,
+    overallScore: null,
+    verdict: null,
     previousVersionId: previousEntry ? previousEntry.sessionId || previousEntry.id : null,
     sharkTankMode: !!sharkTankMode,
   };
 
-  history.unshift(entry);
+  history.unshift(session);
   if (history.length > 50) history.pop();
 
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   } catch (e) {
-    console.warn('Failed to save to localStorage:', e);
+    console.warn('Failed to save session to localStorage:', e);
   }
 
-  return entry;
+  return session;
+}
+
+export function updateSession(sessionId, patchData) {
+  const history = getHistory();
+  const index = history.findIndex((h) => h.id === sessionId || h.sessionId === sessionId);
+  if (index === -1) return null;
+
+  const target = history[index];
+  const updated = {
+    ...target,
+    ...patchData,
+  };
+
+  // Re-compute deltas if analysisResult is completed
+  if (patchData.analysisResult) {
+    const previousVersions = history.filter((h) => h.startupId === target.startupId && h.sessionId !== sessionId);
+    const previousEntry = previousVersions[0] || null;
+    updated.whatChanged = computeWhatChanged(previousEntry?.ideaData, target.ideaData, previousEntry?.overallScore, patchData.analysisResult.overallScore);
+    updated.addressedRecommendations = computeAddressedRecommendations(previousEntry?.analysisResult, target.ideaData, patchData.analysisResult);
+    updated.overallScore = patchData.analysisResult.overallScore;
+    updated.verdict = patchData.analysisResult.verdict;
+    updated.completedAt = new Date().toISOString();
+  }
+
+  history[index] = updated;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.warn('Failed to update session in localStorage:', e);
+  }
+
+  return updated;
+}
+
+export function appendSessionEvent(sessionId, event) {
+  const history = getHistory();
+  const target = history.find((h) => h.id === sessionId || h.sessionId === sessionId);
+  if (!target) return null;
+
+  if (!target.events) target.events = [];
+  target.events.push(event);
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.warn('Failed to append event to localStorage:', e);
+  }
+  return target;
+}
+
+// Legacy save helper
+export function saveAnalysis(ideaData, analysisResult, sharkTankMode) {
+  const session = createSession(ideaData, sharkTankMode);
+  return updateSession(session.sessionId, { analysisResult, status: 'COMPLETED' });
 }
 
 function computeWhatChanged(oldIdea, newIdea, oldScore, newScore) {
@@ -150,4 +208,44 @@ export function getLatestVersion() {
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+/**
+ * One-time migration: tag any existing sessions that have no userId as legacy.
+ * Call this once on app mount.
+ */
+export function migrateExistingSessions() {
+  const history = getHistory();
+  let changed = false;
+  const migrated = history.map((entry) => {
+    if (entry.userId === undefined || entry.isLegacy === undefined) {
+      changed = true;
+      return { ...entry, userId: entry.userId ?? null, isLegacy: entry.isLegacy ?? !entry.userId };
+    }
+    return entry;
+  });
+  if (changed) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+    } catch (e) {
+      console.warn('Failed to migrate sessions:', e);
+    }
+  }
+}
+
+/**
+ * Import a legacy session into an authenticated account.
+ * Sets userId and clears isLegacy flag.
+ */
+export function importSessionToAccount(sessionId, userId) {
+  const history = getHistory();
+  const idx = history.findIndex((h) => h.id === sessionId || h.sessionId === sessionId);
+  if (idx === -1 || !userId) return null;
+  history[idx] = { ...history[idx], userId, isLegacy: false };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.warn('Failed to import session:', e);
+  }
+  return history[idx];
 }

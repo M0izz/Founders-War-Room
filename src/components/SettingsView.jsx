@@ -255,7 +255,9 @@ const TRANSLATIONS = {
 
 export default function SettingsView({
   onNavigate,
-  userName = 'Moiz',
+  userName = 'Founder',
+  user = null,
+  onSignOut,
   language: propLanguage,
   onLanguageChange,
 }) {
@@ -437,12 +439,29 @@ export default function SettingsView({
             </div>
           )}
 
-          <div className="v2-user-dropdown-pill">
-            <div className="v2-user-avatar">
-              <AppIcon name="user" size={14} color="#fff" />
+          <div className="v2-user-dropdown-pill" style={{ position: 'relative' }}>
+            <div className="v2-user-avatar" style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: user ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : undefined,
+              fontWeight: 700, fontSize: '12px', color: '#fff',
+            }}>
+              {user?.displayName ? user.displayName[0].toUpperCase() : <AppIcon name="user" size={14} color="#fff" />}
             </div>
             <span className="v2-user-name">{userName}</span>
-            <AppIcon name="chevron" size={14} className="v2-dropdown-arrow" />
+            {onSignOut && (
+              <button
+                id="settings-sign-out"
+                title="Sign Out"
+                onClick={onSignOut}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', padding: '2px 4px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </header>

@@ -163,8 +163,9 @@ export async function generateChairmanVerdict(
   );
 
   const result = await callAgent(CHAIRMAN_SYSTEM_PROMPT, userPrompt, {
-    temperature: 0.5, // Slightly lower for more deterministic reasoning
+    temperature: 0.5,
     maxTokens: 4096,
+    agentName: 'Chairman',
   });
 
   return result;

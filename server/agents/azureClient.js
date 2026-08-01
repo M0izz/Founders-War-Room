@@ -3,18 +3,13 @@
  *
  * Configures the `openai` SDK to point at the Azure OpenAI deployment and
  * exposes a single `callAgent` helper that wraps chat completions with
- * structured JSON output, error handling, and one automatic retry.
+ * structured JSON output, error handling, and executionMode metadata.
  */
 
 import OpenAI from 'openai';
 
-// ── Lazy-initialised client (env vars aren't available at import time) ────────
 let _client = null;
 
-/**
- * Return (or create) the singleton OpenAI client configured for Azure.
- * @returns {OpenAI}
- */
 function getClient() {
   if (!_client) {
     _client = new OpenAI({
@@ -27,25 +22,34 @@ function getClient() {
   return _client;
 }
 
-/**
- * Call an Azure-hosted GPT model with a system prompt and user message,
- * requesting structured JSON output.
- *
- * Includes one automatic retry on transient failures.
- *
- * @param {string} systemPrompt  — The system-level instruction for the agent.
- * @param {string} userMessage   — The user-level message (startup idea data, etc.).
- * @param {object} [options]     — Optional overrides.
- * @param {number} [options.temperature=0.7] — Sampling temperature.
- * @param {number} [options.maxTokens=4096]  — Max tokens in the response.
- * @returns {Promise<object>} Parsed JSON from the model's response.
- */
-export async function callAgent(systemPrompt, userMessage, options = {}) {
-  const { temperature = 0.7, maxTokens = 4096 } = options;
+const EXECUTIVE_VOICE_INSTRUCTIONS = `
+MANDATORY BOARD MEMBER ROLEPLAY GUIDELINES:
+- You are participating in a live executive board meeting. Speak like a skeptical, sharp executive, not a marketing copywriter.
+- Do NOT use generic startup buzzwords (e.g. "strong GTM", "scalable solution", "massive TAM", "strong PMF", "compelling value proposition", "category-defining", "viral growth", "robust architecture") UNLESS you immediately explain the concrete evidence behind the statement.
+- You MUST reference concrete facts from the provided startup idea (Name, Description, Target Audience, Revenue Model, Industry).
+- Distinguish clearly:
+  1. What the founder explicitly claims
+  2. What is actually supported by the provided information
+  3. What you are assuming
+  4. What critical evidence is missing
+- If another board member's position is provided, directly challenge or agree with their specific claim with evidence-based reasoning.
+`;
 
-  // If no API key set or invalid key, return intelligent agentic simulation
-  if (!process.env.AZURE_API_KEY || process.env.AZURE_API_KEY.includes('your-') || process.env.AZURE_API_KEY === 'placeholder') {
-    return generateFallbackResponse(systemPrompt, userMessage);
+export async function callAgent(systemPrompt, userMessage, options = {}) {
+  const { temperature = 0.7, maxTokens = 4096, agentName = 'Agent' } = options;
+
+  const fullSystemPrompt = `${systemPrompt}\n\n${EXECUTIVE_VOICE_INSTRUCTIONS}`;
+
+  // If no API key set or invalid key, return intelligent agentic fallback with FALLBACK executionMode
+  if (
+    !process.env.AZURE_API_KEY ||
+    process.env.AZURE_API_KEY.includes('your-') ||
+    process.env.AZURE_API_KEY === 'placeholder'
+  ) {
+    console.log(`[MODEL] ${agentName} request started (Mode: FALLBACK)`);
+    const fallbackRes = generateFallbackResponse(fullSystemPrompt, userMessage, agentName);
+    console.log(`[MODEL] ${agentName} response received (Mode: FALLBACK)`);
+    return { ...fallbackRes, executionMode: 'FALLBACK' };
   }
 
   let lastError = null;
@@ -53,9 +57,11 @@ export async function callAgent(systemPrompt, userMessage, options = {}) {
   try {
     const client = getClient();
     const messages = [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: fullSystemPrompt },
       { role: 'user', content: userMessage },
     ];
+
+    console.log(`[MODEL] ${agentName} request started (Mode: LIVE_AI)`);
 
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -68,7 +74,11 @@ export async function callAgent(systemPrompt, userMessage, options = {}) {
         });
 
         const content = response.choices?.[0]?.message?.content;
-        if (content) return JSON.parse(content);
+        if (content) {
+          const parsed = JSON.parse(content);
+          console.log(`[MODEL] ${agentName} response received (Mode: LIVE_AI)`);
+          return { ...parsed, executionMode: 'LIVE_AI' };
+        }
       } catch (err) {
         lastError = err;
         if (attempt === 0) await new Promise((r) => setTimeout(r, 800));
@@ -78,46 +88,56 @@ export async function callAgent(systemPrompt, userMessage, options = {}) {
     lastError = err;
   }
 
-  console.warn(`[Azure Client] API unavailable (${lastError?.message}) — returning agentic analysis response.`);
-  return generateFallbackResponse(systemPrompt, userMessage);
+  console.warn(`[MODEL] ${agentName} Azure API error (${lastError?.message}) — defaulting to FALLBACK response.`);
+  const fallbackRes = generateFallbackResponse(fullSystemPrompt, userMessage, agentName);
+  return { ...fallbackRes, executionMode: 'FALLBACK' };
 }
 
-function generateFallbackResponse(systemPrompt, userMessage) {
-  const isReaper = systemPrompt.includes('Grim Reaper');
-  const isChairman = systemPrompt.includes('Chairman');
-  const isCEO = systemPrompt.includes('CEO Agent') || systemPrompt.includes('Vision Strategist');
-  const isCTO = systemPrompt.includes('CTO Agent') || systemPrompt.includes('Feasibility Engineer');
-  const isInvestor = systemPrompt.includes('Investor Agent') || systemPrompt.includes('Business Viability');
-  const isCustomer = systemPrompt.includes('Customer Agent') || systemPrompt.includes('Demand Validator');
-  const isMarketing = systemPrompt.includes('Marketing Agent') || systemPrompt.includes('Growth Architect');
-  const isRisk = systemPrompt.includes('Risk Advisor') || systemPrompt.includes('Operational Risk');
+function generateFallbackResponse(systemPrompt, userMessage, agentName = 'Agent') {
+  const isChairman = agentName === 'Chairman' || systemPrompt.includes('ultimate decision-maker');
+  const isReaper = agentName === 'Grim Reaper' || (systemPrompt.includes('Death Predictor') && !isChairman);
+  const isCEO = agentName === 'CEO' || systemPrompt.includes('Vision Strategist');
+  const isCTO = agentName === 'CTO' || systemPrompt.includes('Feasibility Engineer');
+  const isInvestor = agentName === 'Investor' || systemPrompt.includes('Business Viability');
+  const isCustomer = agentName === 'Customer' || systemPrompt.includes('Demand Validator');
+  const isMarketing = agentName === 'Marketing' || systemPrompt.includes('Growth Architect');
+  const isRisk = agentName === 'Risk Advisor' || systemPrompt.includes('Operational Risk');
 
-  let startupName = 'VITALINK';
-  if (userMessage.includes('VITALINK') || userMessage.includes('QR')) {
-    startupName = 'VITALINK';
-  } else {
-    try {
-      const match = userMessage.match(/"name":\s*"([^"]+)"/);
-      if (match && match[1]) startupName = match[1];
-    } catch (e) {
-      // default
-    }
-  }
+  let startupName = 'Startup';
+  let industry = 'Tech';
+  let description = 'Core product workflow';
+  let targetAudience = 'target users';
+  let revenueModel = 'Subscription';
+
+  const nameMatch = userMessage.match(/"name":\s*"([^"]+)"/i);
+  if (nameMatch && nameMatch[1]) startupName = nameMatch[1].trim();
+
+  const indMatch = userMessage.match(/"industry":\s*"([^"]+)"/i);
+  if (indMatch && indMatch[1]) industry = indMatch[1].trim();
+
+  const descMatch = userMessage.match(/"description":\s*"([^"]+)"/i);
+  if (descMatch && descMatch[1]) description = descMatch[1].trim();
+
+  const audMatch = userMessage.match(/"targetAudience":\s*"([^"]+)"/i);
+  if (audMatch && audMatch[1]) targetAudience = audMatch[1].trim();
+
+  const revMatch = userMessage.match(/"revenueModel":\s*"([^"]+)"/i);
+  if (revMatch && revMatch[1]) revenueModel = revMatch[1].trim();
 
   if (isReaper) {
     return {
       agentName: 'Grim Reaper',
       role: 'Death Predictor',
-      deathSentence: `If hospital IT administrators refuse zero-trust QR integration, ${startupName} dies within 6 months.`,
-      failureProbability: 38,
+      deathSentence: `Why ${startupName} dies: ${targetAudience} won't change existing operational habits for '${description.slice(0, 45)}', and sales cycles for ${revenueModel} will exhaust cash reserves before scale.`,
+      failureProbability: 42,
       causeOfDeath: [
-        { rank: 1, cause: 'Hospital B2B Sales Friction', evidence: 'Enterprise health sales cycles exceed 14 months' },
-        { rank: 2, cause: 'HIPAA Liability & Compliance Traps', evidence: 'Unencrypted QR data scans risk severe regulatory fines' },
-        { rank: 3, cause: 'Incumbent Copycat Threat', evidence: 'EHR giants can add QR trauma access as a free platform update' }
+        { rank: 1, cause: `Workflow Resistance among ${targetAudience}`, evidence: `Existing habits block quick adoption of '${description.slice(0, 35)}'` },
+        { rank: 2, cause: `Monetization Friction (${revenueModel})`, evidence: `Willingness-to-pay remains unvalidated prior to 90-day pilot proof` },
+        { rank: 3, cause: 'Incumbent Copycat Threat', evidence: `Platform leaders in ${industry} can bundle feature parity for free` }
       ],
-      hiddenRisks: ['Offline network outage during ICU trauma intake', 'Patient consent liability during emergency unconsciousness'],
-      earlyWarningSignals: ['Hospital pilot agreements stall past 90 days', 'Zero B2B revenue after initial launch'],
-      survivalRecommendations: ['Secure 3 signed hospital pilot letters of intent', 'Implement local offline encrypted caching on mobile clients'],
+      hiddenRisks: [`Data compliance traps during offline ${industry} operations`, `High onboarding friction for non-technical ${targetAudience}`],
+      earlyWarningSignals: [`Pilot agreements for ${startupName} stall past 90 days`, 'Zero B2B contract renewals in Quarter 1'],
+      survivalRecommendations: [`Secure 3 signed letters of intent from ${targetAudience}`, 'Implement local offline encrypted data fallback'],
       score: 4.2,
       confidence: 0.88
     };
@@ -125,21 +145,21 @@ function generateFallbackResponse(systemPrompt, userMessage) {
 
   if (isChairman) {
     return {
-      executiveSummary: `The board finds ${startupName} highly promising in emergency healthcare, but hospital monetization and HIPAA compliance remain key prerequisites before scaling.`,
+      executiveSummary: `The board sees real opportunity in ${startupName} for ${targetAudience}, but monetization (${revenueModel}) and operational compliance remain key prerequisites before capital allocation.`,
       consensus: [
-        'Strong emergency-use value proposition with clear target customer pain',
-        'Technically feasible MVP architecture with rapid deployment capability',
-        'High willingness-to-pay among emergency response teams'
+        `Clear problem statement addressing urgent pain for ${targetAudience}`,
+        `Feasible MVP scope buildable within 90 days in ${industry}`,
+        `Direct user demand for '${description.slice(0, 40)}'`
       ],
       criticalSplits: [
-        'Investor prefers immediate B2B enterprise monetization vs CEO prioritizing user adoption'
+        `Investor favors immediate pilot proof of ${revenueModel} vs CEO prioritizing rapid user acquisition`
       ],
-      recommendation: 'INVEST_WITH_CONDITIONS',
-      reasoningChain: `The core emergency QR thesis solves a critical trauma care problem. While technical feasibility is high, hospital IT onboarding and pricing validation require pilot proof before major capital deployment.`,
+      recommendation: 'PROCEED WITH CONDITIONS',
+      reasoningChain: `The thesis for ${startupName} solves a real pain point in ${industry}. Technical feasibility is high, but revenue validation with ${targetAudience} and compliance audits must precede major funding.`,
       topActions: [
-        'Validate pricing & pilot willingness with 10 hospital administrators',
-        'Implement offline local encryption cache for emergency QR scanning',
-        'Complete HIPAA compliance and regulatory legal audit'
+        `Validate ${revenueModel} pricing with 10 key decision makers among ${targetAudience}`,
+        `Build 90-day core MVP for ${startupName} with under 2-minute setup time`,
+        `Complete regulatory and security compliance audit for ${industry}`
       ],
       scores: {
         healthScore: 84,
@@ -150,21 +170,21 @@ function generateFallbackResponse(systemPrompt, userMessage) {
       },
       swot: {
         strengths: [
-          'Clear emergency-use proposition with instant QR access',
-          'High user enthusiasm from trauma doctors and patient families',
-          'Differentiated zero-login emergency workflow'
+          `Clear value proposition solving '${description.slice(0, 40)}'`,
+          `High initial enthusiasm from target users (${targetAudience})`,
+          `Differentiated operational angle in ${industry}`
         ],
         weaknesses: [
-          'Unproven hospital enterprise monetization model',
-          'Long enterprise B2B sales cycle'
+          `Unproven ${revenueModel} monetization at scale`,
+          `Potential sales cycle friction in ${industry}`
         ],
         opportunities: [
-          'Expansion to regional ambulance networks and urgent care chains',
-          'Integration with leading EHR data providers'
+          `Expansion across ${industry} enterprise channels`,
+          'Strategic API integrations with industry incumbents'
         ],
         threats: [
           'Regulatory compliance delays',
-          'Incumbent EHR platforms copying QR access features'
+          `Competitor platform features targeting ${targetAudience}`
         ]
       }
     };
@@ -176,11 +196,14 @@ function generateFallbackResponse(systemPrompt, userMessage) {
       role: 'Vision Strategist',
       score: 8.6,
       confidence: 0.90,
-      keyObservations: ['Compelling emergency healthcare category thesis', 'Clear generational potential in emergency trauma response'],
-      strengths: ['Inspiring mission to eliminate medical history delays', 'Sharp positioning in emergency healthtech'],
-      concerns: ['Need to ensure long-term category expansion beyond QR codes'],
-      recommendations: ['Expand vision to unified emergency identity infrastructure'],
-      verdict: 'Compelling category-defining vision with massive long-term potential.'
+      keyObservations: [
+        `The thesis behind ${startupName} addresses an urgent gap for ${targetAudience}.`,
+        `Core problem statement: ${description.slice(0, 60)}`
+      ],
+      strengths: [`Clear vision targeting ${targetAudience}`, `Sharp positioning in ${industry}`],
+      concerns: [`Ensuring long-term product expansion beyond the initial ${revenueModel} hook`],
+      recommendations: [`Expand ${startupName} into a full platform for ${industry}`],
+      verdict: `I see strong market potential for ${startupName} in ${industry}, provided we execute tightly on '${description.slice(0, 40)}' for ${targetAudience}.`
     };
   }
 
@@ -190,11 +213,14 @@ function generateFallbackResponse(systemPrompt, userMessage) {
       role: 'Feasibility Engineer',
       score: 8.4,
       confidence: 0.92,
-      keyObservations: ['QR scanner architecture is lightweight and buildable in 90 days', 'Zero-latency requirements during emergency lookup'],
-      strengths: ['Feasible mobile client architecture', 'Low initial technical complexity for MVP'],
-      concerns: ['Offline ICU network resilience', 'End-to-end QR payload encryption'],
-      recommendations: ['Build offline local AES-256 storage cache for emergency lookups'],
-      verdict: 'Technically sound architecture ready for 90-day MVP deployment.'
+      keyObservations: [
+        `The tech stack for ${startupName} can be deployed as an MVP in 90 days.`,
+        `Zero-latency requirements when serving ${targetAudience}.`
+      ],
+      strengths: [`Lightweight MVP architecture for ${industry}`, 'Low technical risk for initial version'],
+      concerns: ['Offline system resilience and data encryption'],
+      recommendations: [`Build offline encrypted caching for ${startupName}`],
+      verdict: `Technically feasible architecture for ${startupName}. The core challenge isn't engineering — it's reliable data integration.`
     };
   }
 
@@ -204,11 +230,14 @@ function generateFallbackResponse(systemPrompt, userMessage) {
       role: 'Business Viability Analyst',
       score: 7.2,
       confidence: 0.85,
-      keyObservations: ['B2B SaaS pricing model needs direct hospital admin validation', 'High potential LTV if enterprise contracts lock in'],
-      strengths: ['Large addressable emergency healthcare TAM', 'Clear subscription revenue model concept'],
-      concerns: ['Long hospital procurement cycles', 'Uncertain initial willingness-to-pay'],
-      recommendations: ['Validate B2B pricing with 10 hospital administrators'],
-      verdict: 'Promising TAM but monetization requires pilot validation.'
+      keyObservations: [
+        `The ${revenueModel} model requires direct willingness-to-pay proof from ${targetAudience}.`,
+        `High LTV potential if enterprise contracts lock in.`
+      ],
+      strengths: [`Addressable market opportunity in ${industry}`, `Clear ${revenueModel} pricing structure`],
+      concerns: [`Unvalidated sales cycle length for ${targetAudience}`],
+      recommendations: [`Validate ${revenueModel} pricing with 3 paid pilots among ${targetAudience}`],
+      verdict: `I like the market size for ${startupName}, but I won't assume recurring revenue until ${targetAudience} sign paid pilots.`
     };
   }
 
@@ -218,11 +247,14 @@ function generateFallbackResponse(systemPrompt, userMessage) {
       role: 'Demand Validator',
       score: 9.1,
       confidence: 0.94,
-      keyObservations: ['Emergency doctors love instant QR access without login hurdles', 'High problem urgency in trauma care'],
-      strengths: ['Solves immediate hair-on-fire pain during trauma intake', 'Zero-friction user experience'],
-      concerns: ['Patient onboarding friction before emergency occurs'],
-      recommendations: ['Partner with patient advocacy groups to drive pre-registration'],
-      verdict: 'Extremely strong demand and pain point validation from emergency teams.'
+      keyObservations: [
+        `Target users (${targetAudience}) experience urgent pain regarding '${description.slice(0, 50)}'.`,
+        `Zero onboarding friction is mandatory.`
+      ],
+      strengths: [`Solves daily headache for ${targetAudience}`, 'Immediate productivity/safety gain'],
+      concerns: ['Onboarding friction if setup requires complex configuration'],
+      recommendations: [`Ensure setup for ${startupName} takes less than 2 minutes`],
+      verdict: `As a representative of ${targetAudience}, I need this immediately, but if onboarding takes over 2 minutes, adoption drops.`
     };
   }
 
@@ -232,11 +264,14 @@ function generateFallbackResponse(systemPrompt, userMessage) {
       role: 'Growth Architect',
       score: 7.8,
       confidence: 0.86,
-      keyObservations: ['Strong word-of-mouth potential among ER doctors and paramedics', 'Clear B2C2B viral loop'],
-      strengths: ['High organic sharing potential for emergency QR stickers', 'Strong storytelling narrative'],
-      concerns: ['B2B hospital sales channel needs formal GTM playbook'],
-      recommendations: ['Launch pilot program targeting regional emergency responder networks'],
-      verdict: 'Strong organic acquisition potential with clear GTM angles.'
+      keyObservations: [
+        `Strong organic word-of-mouth potential among ${targetAudience}.`,
+        `Clear acquisition loops in ${industry}.`
+      ],
+      strengths: [`High word-of-mouth potential for ${startupName}`, 'Clear positioning narrative'],
+      concerns: [`Direct channel distribution strategy for ${targetAudience} needs formal playbook`],
+      recommendations: [`Launch targeted pilot campaign in top 5 ${industry} hubs`],
+      verdict: `Strong organic acquisition channel potential for ${startupName}, provided we target ${targetAudience} directly.`
     };
   }
 
@@ -246,11 +281,14 @@ function generateFallbackResponse(systemPrompt, userMessage) {
       role: 'Operational Risk Analyst',
       score: 6.5,
       confidence: 0.89,
-      keyObservations: ['HIPAA compliance and medical data liability require legal audit', 'Offline connectivity risks in ICU'],
-      strengths: ['Clear risk awareness around medical privacy'],
-      concerns: ['Data privacy liability during unconscious emergency intake', 'Regulatory approval timelines'],
-      recommendations: ['Retain healthcare regulatory legal counsel before public launch'],
-      verdict: 'Notable regulatory & operational risks requiring active legal management.'
+      keyObservations: [
+        `Regulatory compliance and data protection in ${industry} require active legal audit.`,
+        `Operational liability when serving ${targetAudience}.`
+      ],
+      strengths: ['Clear risk awareness around compliance'],
+      concerns: [`Liability risks when serving ${targetAudience}`, 'Regulatory approval timelines'],
+      recommendations: [`Retain specialized regulatory counsel for ${industry} compliance`],
+      verdict: `Significant operational and compliance landmines in ${industry} that must be cleared before public rollout of ${startupName}.`
     };
   }
 
@@ -259,11 +297,11 @@ function generateFallbackResponse(systemPrompt, userMessage) {
     role: 'Board Advisor',
     score: 8.0,
     confidence: 0.85,
-    keyObservations: ['Solid strategic alignment across core dimensions'],
+    keyObservations: [`Solid strategic alignment for ${startupName}`],
     strengths: ['Clear market opportunity and functional scope'],
     concerns: ['Requires execution discipline and pilot validation'],
     recommendations: ['Proceed with structured MVP testing'],
-    verdict: 'Strong foundational thesis ready for board review.'
+    verdict: `Strong foundational thesis for ${startupName} ready for board review.`
   };
 }
 

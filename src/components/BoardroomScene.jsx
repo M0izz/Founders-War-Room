@@ -63,157 +63,230 @@ const BOARD_SEATS_MAP = [
 export default function BoardroomScene({
   ideaData,
   result,
+  activeSession,
   sharkTankMode,
   onNewAnalysis,
   onViewHistory,
+  onBack,
 }) {
-  const [activeStep, setActiveStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
   const [activeTab, setActiveTab] = useState('debate'); // 'debate' | 'report'
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [replayIndex, setReplayIndex] = useState(null);
   const transcriptEndRef = useRef(null);
 
-  // Easter Egg checks
-  const isCatIdea = ideaData?.name?.toLowerCase().includes('cat') || ideaData?.description?.toLowerCase().includes('cat') || ideaData?.description?.toLowerCase().includes('uber for cats');
+  // Live Timer derived strictly from sessionStartedAt (Starts at 00:00)
+  const sessionStartedAtRef = useRef(activeSession?.sessionStartedAt || Date.now());
+  const [now, setNow] = useState(Date.now());
 
-  // Extract dynamic agent quotes from result object
-  const agentMap = {};
-  if (result?.agentResults && Array.isArray(result.agentResults)) {
-    result.agentResults.forEach((a) => {
-      if (a.key) agentMap[a.key] = a;
-      if (a.agentName) agentMap[a.agentName.toLowerCase().replace(/\s+/g, '')] = a;
-    });
-  }
-
-  const ceoQuote = agentMap['ceo']?.verdict || `This startup idea addresses a critical gap in ${ideaData?.industry || 'the market'} with strong category-defining potential.`;
-  const investorQuote = agentMap['investor']?.verdict || 'The initial customer acquisition cost is high, but the unit economics scale gracefully at enterprise level.';
-  const marketingQuote = agentMap['marketing']?.verdict || 'We need an organic viral loop. Pivot directly to strategic distribution channels.';
-  const ctoQuote = agentMap['cto']?.verdict || 'Technically sound architecture. We can deploy the initial core MVP in under 90 days.';
-  const customerQuote = agentMap['customer']?.verdict || 'Willingness to pay is high if onboarding friction is zero and security is guaranteed.';
-  const riskQuote = agentMap['riskadvisor']?.verdict || agentMap['risk']?.verdict || 'Regulatory compliance and data protection landmines must be cleared before public rollout.';
-  const reaperQuote = result?.grimReaper?.deathSentence || 'This startup dies in Year 2 if incumbent platform players copy your primary hook as a free feature.';
-  const chairmanQuote = result?.executiveSummary 
-    ? `${result.executiveSummary} Final Score: ${result.overallScore || 8.4}/10 (${result.verdict || 'PROCEED WITH CONDITIONS'}).`
-    : `Quorum reached. The board approves conditional execution. Final Overall Score: ${result?.overallScore || 8.4}/10.`;
-
-  const debateTimeline = [
-    {
-      speaker: 'CEO',
-      role: 'Vision Strategist',
-      color: '#3b82f6',
-      iconName: 'ceo',
-      time: '10:42 AM',
-      quote: ceoQuote,
-    },
-    {
-      speaker: 'Investor',
-      role: 'Business Viability Analyst',
-      color: '#fbbf24',
-      iconName: 'investor',
-      time: '10:43 AM',
-      quote: isCatIdea ? "I'd invest... emotionally." : investorQuote,
-    },
-    {
-      speaker: 'Marketing',
-      role: 'Growth Architect',
-      color: '#c084fc',
-      iconName: 'marketing',
-      time: '10:43 AM',
-      quote: marketingQuote,
-    },
-    {
-      speaker: 'CTO',
-      role: 'Feasibility Engineer',
-      color: '#38bdf8',
-      iconName: 'cto',
-      time: '10:44 AM',
-      quote: ctoQuote,
-    },
-    {
-      speaker: 'Customer',
-      role: 'Demand Validator',
-      color: '#4ade80',
-      iconName: 'customer',
-      time: '10:44 AM',
-      quote: customerQuote,
-    },
-    {
-      speaker: 'Risk Advisor',
-      role: 'Operational Risk Analyst',
-      color: '#fb923c',
-      iconName: 'risk',
-      time: '10:45 AM',
-      quote: riskQuote,
-    },
-    {
-      speaker: 'Grim Reaper',
-      role: 'Death Predictor',
-      color: '#f87171',
-      iconName: 'reaper',
-      time: '10:45 AM',
-      quote: isCatIdea ? "Nine lives still won't save this business model." : reaperQuote,
-    },
-    {
-      speaker: 'Chairman',
-      role: 'Executive Arbitrator',
-      color: '#ffffff',
-      iconName: 'chairman',
-      time: '10:46 AM',
-      quote: chairmanQuote,
-    },
-  ];
-
-  // Timer counter (mm:ss)
-  const [secondsElapsed, setSecondsElapsed] = useState(767); // Default 12:47 to match mockup
   useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsElapsed((prev) => prev + 1);
-    }, 1000);
+    sessionStartedAtRef.current = activeSession?.sessionStartedAt || Date.now();
+  }, [activeSession?.sessionStartedAt]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  const elapsedSeconds = Math.max(0, Math.floor((now - sessionStartedAtRef.current) / 1000));
   const formatTimer = (sec) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const startupName = ideaData?.name || 'VaultPulse';
+  const startupName = ideaData?.name || activeSession?.ideaData?.name || 'VaultPulse';
 
-  // Extract structured analysis
-  const overallScore = result?.overallScore || 8.7;
-  const strengths = result?.strengths || [
-    'Huge addressable market with high demand urgency',
-    'Feasible technical architecture for 90-day deployment',
-    'Strong category-defining potential and clear value proposition',
-  ];
-  const weaknesses = result?.weaknesses || [
-    'Initial customer acquisition cost requires optimization',
-    'Regulatory compliance & data privacy risk management',
-  ];
-  const recommendations = result?.recommendations || [
-    'Build 90-Day core MVP with zero onboarding friction',
-    'Establish strategic enterprise distribution partnerships',
-    'Implement automated referral viral loops',
-    'Clear regulatory and security compliance early',
-  ];
+  // Events list from activeSession
+  const events = activeSession?.events || [];
+  const isSessionFinished = events.some((e) => e.type === 'SESSION_COMPLETED') || result != null;
+  const executionMode = activeSession?.executionMode || events.find((e) => e.payload?.executionMode)?.payload?.executionMode || 'LIVE_AI';
+
+  // Count uniquely completed board member seats out of 8
+  // Uses agentKey (not agent name) to avoid double-counting when both fields are present
+  const getCompletedSeatsCount = () => {
+    const completedSet = new Set();
+    let reaperDone = false;
+    let chairmanDone = false;
+    events.forEach((e) => {
+      if (e.type === 'AGENT_COMPLETED') {
+        // Prefer payload.agentKey (the definition key like 'riskAdvisor')
+        const key = e.payload?.agentKey || e.payload?.key || e.agent?.toLowerCase().replace(/\s+/g, '') || null;
+        if (key) completedSet.add(key.toLowerCase().replace(/\s+/g, ''));
+      }
+      if (e.type === 'GRIM_REAPER_COMPLETED') reaperDone = true;
+      if (e.type === 'CHAIRMAN_COMPLETED') chairmanDone = true;
+    });
+    const coreCount = Math.min(completedSet.size, 6);
+    return coreCount + (reaperDone ? 1 : 0) + (chairmanDone ? 1 : 0);
+  };
+
+  const completedCount = (() => {
+    const raw = getCompletedSeatsCount();
+    // If session is finished and events haven't loaded (history view), show 8/8
+    if (raw === 0 && isSessionFinished) return 8;
+    return raw;
+  })();
+
+  // Strict state machine derivation for agent seat status
+  const getAgentStatus = (agentKey) => {
+    const keyLower = agentKey.toLowerCase();
+    
+    // Check specific completion events for this agent
+    if (keyLower === 'reaper') {
+      if (events.some((e) => e.type === 'GRIM_REAPER_COMPLETED')) return { label: '✓ READY', class: 'status-complete' };
+      if (events.some((e) => e.type === 'GRIM_REAPER_STARTED')) return { label: '● CHALLENGING', class: 'status-challenging' };
+      return { label: '○ WAITING', class: '' };
+    }
+
+    if (keyLower === 'chairman') {
+      if (events.some((e) => e.type === 'CHAIRMAN_COMPLETED')) return { label: '✓ READY', class: 'status-complete' };
+      if (events.some((e) => e.type === 'CHAIRMAN_STARTED')) return { label: '● SYNTHESIZING', class: 'status-synthesizing' };
+      return { label: '○ WAITING', class: '' };
+    }
+
+    // Core 6 Agents
+    const agentEvents = events.filter((e) => (e.payload?.agentKey && e.payload.agentKey.toLowerCase() === keyLower) || (e.agent && e.agent.toLowerCase().includes(keyLower)));
+    const lastEvent = agentEvents[agentEvents.length - 1];
+
+    if (lastEvent?.type === 'AGENT_COMPLETED') {
+      return { label: '✓ READY', class: 'status-complete' };
+    }
+    if (lastEvent?.type === 'AGENT_ERROR') {
+      return { label: '⚠️ ERROR', class: 'status-error' };
+    }
+    if (lastEvent?.type === 'AGENT_STARTED') {
+      return { label: '● ANALYZING', class: 'status-synthesizing' };
+    }
+
+    // If session finished from static result fallback (historical view without event log)
+    if (events.length === 0 && activeSession?.status === 'COMPLETED' && result) {
+      return { label: '✓ READY', class: 'status-complete' };
+    }
+
+    return { label: '○ WAITING', class: '' };
+  };
+
+  // Build live transcript from events
+  const buildTranscriptItems = () => {
+    if (replayIndex !== null && events.length > 0) {
+      return events.slice(0, replayIndex + 1);
+    }
+
+    if (events.length > 0) {
+      return events;
+    }
+
+    // Static fallback if opened from history without event log
+    const agentResults = result?.agentResults || [];
+    const items = [];
+
+    agentResults.forEach((a) => {
+      items.push({
+        type: 'AGENT_COMPLETED',
+        agentKey: a.key,
+        agentName: a.agentName || a.name || 'Agent',
+        role: a.role || 'Executive',
+        payload: a,
+        timestamp: Date.now(),
+      });
+    });
+
+    if (result?.grimReaper) {
+      items.push({
+        type: 'GRIM_REAPER_COMPLETED',
+        agentKey: 'reaper',
+        payload: result.grimReaper,
+        timestamp: Date.now(),
+      });
+    }
+
+    if (result?.chairmanVerdict || result?.executiveSummary) {
+      items.push({
+        type: 'CHAIRMAN_COMPLETED',
+        agentKey: 'chairman',
+        payload: result.chairmanVerdict || { executiveSummary: result.executiveSummary, recommendation: result.verdict },
+        timestamp: Date.now(),
+      });
+    }
+
+    return items;
+  };
+
+  const transcriptEvents = buildTranscriptItems();
+
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [transcriptEvents.length]);
 
   const handleReplayDebate = () => {
-    setActiveStep(0);
-    setIsPlaying(true);
+    if (events.length === 0) return;
+    setReplayIndex(0);
     playBoardroomSound('click');
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx += 1;
+      if (idx >= events.length) {
+        clearInterval(interval);
+        setReplayIndex(null);
+        playBoardroomSound('chime');
+      } else {
+        setReplayIndex(idx);
+        playBoardroomSound('chair');
+      }
+    }, 1500);
+  };
+
+  const handleExitClick = () => {
+    if (!isSessionFinished && activeSession?.status === 'RUNNING') {
+      setShowExitConfirm(true);
+    } else {
+      if (onBack) onBack();
+    }
   };
 
   const handleExportPDF = () => {
     window.print();
   };
 
+  // Structured verdict output
+  const overallScore = result?.overallScore || activeSession?.overallScore || 8.4;
+  const chairmanVerdictText = result?.verdict || activeSession?.verdict || 'PROCEED WITH CONDITIONS';
+
+  const strengths = result?.strengths || [
+    'Clear value proposition addressing critical customer pain points',
+    'Feasible technical architecture ready for 90-day deployment',
+    'Strong category-defining potential and differentiated market positioning',
+  ];
+  const weaknesses = result?.weaknesses || [
+    'Monetization model requires 3 direct pilot validations',
+    'Operational compliance and data security landmines must be cleared',
+  ];
+  const recommendations = result?.recommendations || [
+    'Validate pricing and pilot willingness with 10 key stakeholders',
+    'Build 90-day core MVP with zero onboarding friction',
+    'Complete regulatory and data privacy audit',
+  ];
+
   return (
     <div className="wr-mockup-container">
       {/* Top Header Controls */}
       <header className="war-room-header" style={{ marginBottom: '8px' }}>
-        <div className="header-left">
-          <span className="live-pill"><span className="pulse-dot-green" /> LIVE BOARDROOM SESSION</span>
-          <h2 className="header-startup-name">{startupName}</h2>
+        <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button className="btn-sm btn-ghost" onClick={handleExitClick} style={{ color: '#cbd5e1' }}>
+            <AppIcon name="arrow-left" size={16} /> Exit War Room
+          </button>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="live-pill">
+                <span className={isSessionFinished ? "pulse-dot-green" : "pulse-dot-cyan"} />
+                {isSessionFinished ? 'BOARD SESSION COMPLETE' : 'LIVE BOARDROOM SESSION'}
+              </span>
+              <span className="mode-badge" style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '4px', background: executionMode === 'LIVE_AI' ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)', color: executionMode === 'LIVE_AI' ? '#4ade80' : '#fbbf24', border: `1px solid ${executionMode === 'LIVE_AI' ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}` }}>
+                {executionMode === 'LIVE_AI' ? '⚡ LIVE AI SESSION' : '⚠️ FALLBACK MODE (API Key Unavailable)'}
+              </span>
+            </div>
+            <h2 className="header-startup-name" style={{ margin: '2px 0 0 0' }}>{startupName}</h2>
+          </div>
         </div>
 
         <div className="header-nav-tabs">
@@ -235,11 +308,30 @@ export default function BoardroomScene({
           <button className="btn-sm btn-ghost" onClick={handleReplayDebate} title="Replay Board Meeting">
             <AppIcon name="zap" size={16} /> Replay
           </button>
+          <button className="btn-sm btn-ghost" onClick={handleExportPDF} title="Export PDF Report">
+            <AppIcon name="history" size={16} /> Export PDF
+          </button>
           <button className="btn-sm btn-primary btn-glow" onClick={onNewAnalysis}>
             <AppIcon name="plus" size={16} /> New Session
           </button>
         </div>
       </header>
+
+      {/* Confirmation Modal for Leaving Live Session */}
+      {showExitConfirm && (
+        <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="glass-card-lg" style={{ width: '420px', padding: '24px', textAlign: 'center' }}>
+            <h3 style={{ color: '#f8fafc', margin: '0 0 12px 0' }}>Leave Active Board Session?</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '0 0 20px 0' }}>
+              Your board session is analyzing in the background. You can return anytime via Dashboard or Reports.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button className="btn-sm btn-ghost" onClick={() => setShowExitConfirm(false)}>Stay in Meeting</button>
+              <button className="btn-sm btn-primary btn-glow" onClick={() => { setShowExitConfirm(false); if (onBack) onBack(); }}>Confirm Exit</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Workspace Layout */}
       {activeTab === 'debate' ? (
@@ -258,16 +350,33 @@ export default function BoardroomScene({
               <div className="wr-topbar-metrics">
                 <div className="wr-metric-item">
                   <span className="wr-metric-label">BOARD PROGRESS</span>
-                  <span className="wr-metric-value">7 / 8 Complete</span>
+                  <span className="wr-metric-value">
+                    {completedCount} / 8 Complete
+                  </span>
                   <div className="wr-progress-bar-sm">
-                    <div className="wr-progress-fill-sm" style={{ width: '87.5%' }} />
+                    <div
+                      className="wr-progress-fill-sm"
+                      style={{
+                        width: `${Math.round((completedCount / 8) * 100)}%`,
+                      }}
+                    />
                   </div>
                 </div>
 
                 <div className="wr-metric-item">
                   <span className="wr-metric-label">DEBATE PHASE</span>
                   <span className="wr-metric-value" style={{ color: '#38bdf8' }}>
-                    Chairman Synthesis
+                    {isSessionFinished
+                      ? 'Final Verdict'
+                      : events.some((e) => e.type === 'CHAIRMAN_STARTED')
+                      ? 'Chairman Synthesis'
+                      : events.some((e) => e.type === 'GRIM_REAPER_STARTED')
+                      ? 'Reaper Review'
+                      : events.some((e) => e.type === 'REBUTTAL_STARTED' || e.type === 'CONTRADICTION_FOUND')
+                      ? 'Targeted Rebuttal'
+                      : events.some((e) => e.type === 'CROSS_EXAMINATION_STARTED')
+                      ? 'Cross-Examination'
+                      : 'Core Analysis'}
                   </span>
                 </div>
 
@@ -275,7 +384,7 @@ export default function BoardroomScene({
                   <span className="wr-metric-label">TIME ELAPSED</span>
                   <div className="wr-timer-box">
                     <AppIcon name="clock" size={16} color="#38bdf8" />
-                    <span>{formatTimer(secondsElapsed)}</span>
+                    <span>{formatTimer(elapsedSeconds)}</span>
                   </div>
                 </div>
               </div>
@@ -285,10 +394,8 @@ export default function BoardroomScene({
             <div className="wr-radial-canvas">
               {/* SVG Dotted Connection Lines & Orbit Ellipse */}
               <svg className="wr-svg-lines" viewBox="0 0 800 560">
-                {/* Orbital Ellipse */}
                 <ellipse cx="400" cy="280" rx="290" ry="200" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1.5" strokeDasharray="6 6" fill="none" />
                 
-                {/* Radial Ray Lines */}
                 <line x1="400" y1="280" x2="400" y2="55" stroke="rgba(245, 158, 11, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
                 <line x1="400" y1="280" x2="190" y2="125" stroke="rgba(59, 130, 246, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
                 <line x1="400" y1="280" x2="610" y2="125" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="2" strokeDasharray="4 4" />
@@ -309,14 +416,16 @@ export default function BoardroomScene({
 
               {/* Chairman (Top) */}
               <div className="wr-agent-seat-node seat-chairman">
-                <div className="wr-node-corner-badge badge-gold">✓</div>
+                <div className="wr-node-corner-badge badge-gold">👑</div>
                 <div className="wr-node-icon-avatar" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
                   <AppIcon name="chairman" size={18} color="#fbbf24" />
                 </div>
                 <div className="wr-node-info">
                   <span className="wr-node-title">CHAIRMAN</span>
                   <span className="wr-node-role">Executive Arbitrator</span>
-                  <span className="wr-node-status-pill status-synthesizing">● SYNTHESIZING</span>
+                  <span className={`wr-node-status-pill ${getAgentStatus('chairman').class}`}>
+                    {getAgentStatus('chairman').label}
+                  </span>
                 </div>
               </div>
 
@@ -329,7 +438,9 @@ export default function BoardroomScene({
                 <div className="wr-node-info">
                   <span className="wr-node-title">CEO</span>
                   <span className="wr-node-role">Vision Strategist</span>
-                  <span className="wr-node-status-pill status-complete">✓ COMPLETE</span>
+                  <span className={`wr-node-status-pill ${getAgentStatus('ceo').class}`}>
+                    {getAgentStatus('ceo').label}
+                  </span>
                 </div>
               </div>
 
@@ -342,7 +453,9 @@ export default function BoardroomScene({
                 <div className="wr-node-info">
                   <span className="wr-node-title">INVESTOR</span>
                   <span className="wr-node-role">Business Analyst</span>
-                  <span className="wr-node-status-pill status-complete">✓ COMPLETE</span>
+                  <span className={`wr-node-status-pill ${getAgentStatus('investor').class}`}>
+                    {getAgentStatus('investor').label}
+                  </span>
                 </div>
               </div>
 
@@ -355,7 +468,9 @@ export default function BoardroomScene({
                 <div className="wr-node-info">
                   <span className="wr-node-title">MARKETING</span>
                   <span className="wr-node-role">Growth Architect</span>
-                  <span className="wr-node-status-pill status-complete">✓ COMPLETE</span>
+                  <span className={`wr-node-status-pill ${getAgentStatus('marketing').class}`}>
+                    {getAgentStatus('marketing').label}
+                  </span>
                 </div>
               </div>
 
@@ -368,7 +483,9 @@ export default function BoardroomScene({
                 <div className="wr-node-info">
                   <span className="wr-node-title">CTO</span>
                   <span className="wr-node-role">Feasibility Engineer</span>
-                  <span className="wr-node-status-pill status-complete">✓ COMPLETE</span>
+                  <span className={`wr-node-status-pill ${getAgentStatus('cto').class}`}>
+                    {getAgentStatus('cto').label}
+                  </span>
                 </div>
               </div>
 
@@ -381,7 +498,9 @@ export default function BoardroomScene({
                 <div className="wr-node-info">
                   <span className="wr-node-title">CUSTOMER</span>
                   <span className="wr-node-role">Demand Validator</span>
-                  <span className="wr-node-status-pill status-complete">✓ COMPLETE</span>
+                  <span className={`wr-node-status-pill ${getAgentStatus('customer').class}`}>
+                    {getAgentStatus('customer').label}
+                  </span>
                 </div>
               </div>
 
@@ -394,7 +513,9 @@ export default function BoardroomScene({
                 <div className="wr-node-info">
                   <span className="wr-node-title">RISK ADVISOR</span>
                   <span className="wr-node-role">Risk Analyst</span>
-                  <span className="wr-node-status-pill status-complete">✓ COMPLETE</span>
+                  <span className={`wr-node-status-pill ${getAgentStatus('risk').class}`}>
+                    {getAgentStatus('risk').label}
+                  </span>
                 </div>
               </div>
 
@@ -407,7 +528,9 @@ export default function BoardroomScene({
                 <div className="wr-node-info">
                   <span className="wr-node-title">GRIM REAPER</span>
                   <span className="wr-node-role">Death Predictor</span>
-                  <span className="wr-node-status-pill status-challenging">● CHALLENGING</span>
+                  <span className={`wr-node-status-pill ${getAgentStatus('reaper').class}`}>
+                    {getAgentStatus('reaper').label}
+                  </span>
                 </div>
               </div>
 
@@ -416,44 +539,54 @@ export default function BoardroomScene({
             {/* Bottom Stepper Pipeline Row */}
             <div className="wr-stepper-pipeline-row">
               
-              <div className="wr-step-card completed-step">
+              <div className={`wr-step-card ${events.filter(e => e.type === 'AGENT_COMPLETED').length >= 6 ? 'completed-step' : 'active-step'}`}>
                 <div className="wr-step-title-group">
                   <AppIcon name="check" size={14} color="#4ade80" />
                   <span className="wr-step-name">1 Core Analysis</span>
                 </div>
-                <span className="wr-step-subtext" style={{ color: '#4ade80' }}>6/6 Complete</span>
+                <span className="wr-step-subtext" style={{ color: '#4ade80' }}>
+                  {events.filter(e => e.type === 'AGENT_COMPLETED').length}/6 Complete
+                </span>
               </div>
 
-              <div className="wr-step-card completed-step">
+              <div className={`wr-step-card ${events.some(e => e.type === 'GRIM_REAPER_COMPLETED') ? 'completed-step' : events.some(e => e.type === 'GRIM_REAPER_STARTED') ? 'active-step' : ''}`}>
                 <div className="wr-step-title-group">
-                  <AppIcon name="reaper" size={14} color="#4ade80" />
+                  <AppIcon name="reaper" size={14} color="#f87171" />
                   <span className="wr-step-name">2 Reaper Review</span>
                 </div>
-                <span className="wr-step-subtext" style={{ color: '#4ade80' }}>Complete</span>
+                <span className="wr-step-subtext" style={{ color: '#4ade80' }}>
+                  {events.some(e => e.type === 'GRIM_REAPER_COMPLETED') ? 'Complete' : events.some(e => e.type === 'GRIM_REAPER_STARTED') ? 'In Progress' : 'Pending'}
+                </span>
               </div>
 
-              <div className="wr-step-card completed-step">
+              <div className={`wr-step-card ${events.some(e => e.type === 'DISAGREEMENT_FOUND') ? 'completed-step' : ''}`}>
                 <div className="wr-step-title-group">
                   <AppIcon name="target" size={14} color="#c084fc" />
                   <span className="wr-step-name">3 Cross-Exam</span>
                 </div>
-                <span className="wr-step-subtext" style={{ color: '#c084fc' }}>Contradictions Found</span>
+                <span className="wr-step-subtext" style={{ color: '#c084fc' }}>
+                  {events.some(e => e.type === 'DISAGREEMENT_FOUND') ? 'Contradictions Found' : 'Pending'}
+                </span>
               </div>
 
-              <div className="wr-step-card active-step">
+              <div className={`wr-step-card ${events.some(e => e.type === 'CHAIRMAN_COMPLETED') ? 'completed-step' : events.some(e => e.type === 'CHAIRMAN_STARTED') ? 'active-step' : ''}`}>
                 <div className="wr-step-title-group">
                   <AppIcon name="chairman" size={14} color="#38bdf8" />
                   <span className="wr-step-name">4 Chairman Verdict</span>
                 </div>
-                <span className="wr-step-subtext" style={{ color: '#38bdf8' }}>In Progress</span>
+                <span className="wr-step-subtext" style={{ color: '#38bdf8' }}>
+                  {events.some(e => e.type === 'CHAIRMAN_COMPLETED') ? 'Complete' : events.some(e => e.type === 'CHAIRMAN_STARTED') ? 'In Progress' : 'Pending'}
+                </span>
               </div>
 
-              <div className="wr-step-card">
+              <div className={`wr-step-card ${isSessionFinished ? 'completed-step' : ''}`}>
                 <div className="wr-step-title-group">
                   <AppIcon name="risk" size={14} color="#64748b" />
                   <span className="wr-step-name">5 Audit & Finalize</span>
                 </div>
-                <span className="wr-step-subtext">Pending</span>
+                <span className="wr-step-subtext">
+                  {isSessionFinished ? 'Audit Passed' : 'Pending'}
+                </span>
               </div>
 
             </div>
@@ -469,7 +602,7 @@ export default function BoardroomScene({
               </div>
 
               <select className="wr-transcript-filter-select">
-                <option>All Agents</option>
+                <option>All Events</option>
                 <option>Core Agents</option>
                 <option>Grim Reaper</option>
                 <option>Chairman</option>
@@ -477,128 +610,118 @@ export default function BoardroomScene({
             </div>
 
             <div className="wr-transcript-feed-scroll">
-              
-              {/* CEO Card */}
-              <div className="wr-msg-card-item theme-ceo">
-                <div className="wr-msg-avatar-icon" style={{ background: 'rgba(59, 130, 246, 0.2)' }}>
-                  <AppIcon name="ceo" size={16} color="#3b82f6" />
-                </div>
-                <div className="wr-msg-content-stack">
-                  <div className="wr-msg-header-line">
-                    <span className="wr-msg-speaker-name" style={{ color: '#3b82f6' }}>CEO</span>
-                    <span className="wr-msg-timestamp">10:42 AM</span>
-                  </div>
-                  <p className="wr-msg-quote-text">{ceoQuote}</p>
-                </div>
-              </div>
-
-              {/* Investor Card */}
-              <div className="wr-msg-card-item theme-investor">
-                <div className="wr-msg-avatar-icon" style={{ background: 'rgba(251, 191, 36, 0.2)' }}>
-                  <AppIcon name="investor" size={16} color="#fbbf24" />
-                </div>
-                <div className="wr-msg-content-stack">
-                  <div className="wr-msg-header-line">
-                    <span className="wr-msg-speaker-name" style={{ color: '#fbbf24' }}>Investor</span>
-                    <span className="wr-msg-timestamp">10:43 AM</span>
-                  </div>
-                  <p className="wr-msg-quote-text">{investorQuote}</p>
-                </div>
-              </div>
-
-              {/* Marketing Card */}
-              <div className="wr-msg-card-item theme-marketing">
-                <div className="wr-msg-avatar-icon" style={{ background: 'rgba(192, 132, 252, 0.2)' }}>
-                  <AppIcon name="marketing" size={16} color="#c084fc" />
-                </div>
-                <div className="wr-msg-content-stack">
-                  <div className="wr-msg-header-line">
-                    <span className="wr-msg-speaker-name" style={{ color: '#c084fc' }}>Marketing</span>
-                    <span className="wr-msg-timestamp">10:43 AM</span>
-                  </div>
-                  <p className="wr-msg-quote-text">{marketingQuote}</p>
-                </div>
-              </div>
-
-              {/* CTO Card */}
-              <div className="wr-msg-card-item theme-cto">
-                <div className="wr-msg-avatar-icon" style={{ background: 'rgba(56, 189, 248, 0.2)' }}>
-                  <AppIcon name="cto" size={16} color="#38bdf8" />
-                </div>
-                <div className="wr-msg-content-stack">
-                  <div className="wr-msg-header-line">
-                    <span className="wr-msg-speaker-name" style={{ color: '#38bdf8' }}>CTO</span>
-                    <span className="wr-msg-timestamp">10:44 AM</span>
-                  </div>
-                  <p className="wr-msg-quote-text">{ctoQuote}</p>
-                </div>
-              </div>
-
-              {/* Customer Card */}
-              <div className="wr-msg-card-item theme-customer">
-                <div className="wr-msg-avatar-icon" style={{ background: 'rgba(74, 222, 128, 0.2)' }}>
-                  <AppIcon name="customer" size={16} color="#4ade80" />
-                </div>
-                <div className="wr-msg-content-stack">
-                  <div className="wr-msg-header-line">
-                    <span className="wr-msg-speaker-name" style={{ color: '#4ade80' }}>Customer</span>
-                    <span className="wr-msg-timestamp">10:44 AM</span>
-                  </div>
-                  <p className="wr-msg-quote-text">{customerQuote}</p>
-                </div>
-              </div>
-
-              {/* Risk Advisor Card */}
-              <div className="wr-msg-card-item theme-risk">
-                <div className="wr-msg-avatar-icon" style={{ background: 'rgba(251, 146, 60, 0.2)' }}>
-                  <AppIcon name="risk" size={16} color="#fb923c" />
-                </div>
-                <div className="wr-msg-content-stack">
-                  <div className="wr-msg-header-line">
-                    <span className="wr-msg-speaker-name" style={{ color: '#fb923c' }}>Risk Advisor</span>
-                    <span className="wr-msg-timestamp">10:45 AM</span>
-                  </div>
-                  <p className="wr-msg-quote-text">{riskQuote}</p>
-                </div>
-              </div>
-
-              {/* Grim Reaper Card (with ADVERSARIAL REVIEW badge) */}
-              <div className="wr-msg-card-item theme-reaper">
-                <div className="wr-msg-avatar-icon" style={{ background: 'rgba(248, 113, 113, 0.2)' }}>
-                  <AppIcon name="reaper" size={16} color="#f87171" />
-                </div>
-                <div className="wr-msg-content-stack">
-                  <div className="wr-msg-header-line">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="wr-msg-speaker-name" style={{ color: '#f87171' }}>Grim Reaper</span>
-                      <span className="wr-msg-timestamp">10:46 AM</span>
+              {transcriptEvents.map((ev, idx) => {
+                if (ev.type === 'SESSION_STARTED') {
+                  return (
+                    <div key={idx} className="wr-msg-card-item" style={{ borderLeftColor: '#38bdf8', background: 'rgba(56, 189, 248, 0.05)' }}>
+                      <div className="wr-msg-avatar-icon" style={{ background: 'rgba(56, 189, 248, 0.2)' }}>
+                        <AppIcon name="zap" size={16} color="#38bdf8" />
+                      </div>
+                      <div className="wr-msg-content-stack">
+                        <div className="wr-msg-header-line">
+                          <span className="wr-msg-speaker-name" style={{ color: '#38bdf8' }}>WAR ROOM SESSION INITIALIZED</span>
+                          <span className="wr-msg-timestamp">00:00</span>
+                        </div>
+                        <p className="wr-msg-quote-text">Quorum assembled for {ev.ideaData?.name || startupName}. 6 Core Domain Agents initialized...</p>
+                      </div>
                     </div>
-                    <span className="wr-msg-tag-badge" style={{ background: 'rgba(248, 113, 113, 0.2)', color: '#f87171' }}>
-                      ADVERSARIAL REVIEW
-                    </span>
-                  </div>
-                  <p className="wr-msg-quote-text">{reaperQuote}</p>
-                </div>
-              </div>
+                  );
+                }
 
-              {/* Chairman Card (with SYNTHESIZING badge) */}
-              <div className="wr-msg-card-item theme-chairman">
-                <div className="wr-msg-avatar-icon" style={{ background: 'rgba(245, 158, 11, 0.2)' }}>
-                  <AppIcon name="chairman" size={16} color="#fbbf24" />
-                </div>
-                <div className="wr-msg-content-stack">
-                  <div className="wr-msg-header-line">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="wr-msg-speaker-name" style={{ color: '#fbbf24' }}>Chairman</span>
-                      <span className="wr-msg-timestamp">10:47 AM</span>
+                if (ev.type === 'DISAGREEMENT_FOUND') {
+                  return (
+                    <div key={idx} className="wr-msg-card-item" style={{ borderLeftColor: '#c084fc', background: 'rgba(192, 132, 252, 0.08)' }}>
+                      <div className="wr-msg-avatar-icon" style={{ background: 'rgba(192, 132, 252, 0.2)' }}>
+                        <AppIcon name="target" size={16} color="#c084fc" />
+                      </div>
+                      <div className="wr-msg-content-stack">
+                        <div className="wr-msg-header-line">
+                          <span className="wr-msg-speaker-name" style={{ color: '#c084fc' }}>CROSS-EXAMINATION DISAGREEMENT</span>
+                          <span className="wr-msg-tag-badge" style={{ background: 'rgba(192, 132, 252, 0.2)', color: '#c084fc' }}>
+                            CONFLICT DETECTED
+                          </span>
+                        </div>
+                        <p className="wr-msg-quote-text" style={{ fontStyle: 'italic' }}>
+                          {ev.reasons?.[0] || `${ev.agents?.[0]} and ${ev.agents?.[1]} identified conflicting assumptions on ${ev.dimension}`}
+                        </p>
+                      </div>
                     </div>
-                    <span className="wr-msg-tag-badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
-                      SYNTHESIZING
-                    </span>
-                  </div>
-                  <p className="wr-msg-quote-text">Evaluating all perspectives and forming final verdict...</p>
-                </div>
-              </div>
+                  );
+                }
+
+                if (ev.type === 'AGENT_COMPLETED') {
+                  const agentKey = ev.agentKey || ev.payload?.key || 'ceo';
+                  const payload = ev.payload || {};
+                  const quote = payload.verdict || payload.keyObservations?.[0] || 'Analysis complete.';
+                  const agentName = ev.agentName || payload.agentName || agentKey.toUpperCase();
+                  const themeClass = `theme-${agentKey.toLowerCase()}`;
+                  const colorMap = { ceo: '#3b82f6', investor: '#fbbf24', marketing: '#c084fc', cto: '#38bdf8', customer: '#4ade80', risk: '#fb923c' };
+                  const color = colorMap[agentKey.toLowerCase()] || '#38bdf8';
+
+                  return (
+                    <div key={idx} className={`wr-msg-card-item ${themeClass}`}>
+                      <div className="wr-msg-avatar-icon" style={{ background: `${color}33` }}>
+                        <AppIcon name={agentKey.toLowerCase()} size={16} color={color} />
+                      </div>
+                      <div className="wr-msg-content-stack">
+                        <div className="wr-msg-header-line">
+                          <span className="wr-msg-speaker-name" style={{ color }}>{agentName}</span>
+                          <span className="wr-msg-timestamp">{payload.score ? `Score: ${payload.score}/10` : 'Complete'}</span>
+                        </div>
+                        <p className="wr-msg-quote-text">"{quote}"</p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (ev.type === 'GRIM_REAPER_COMPLETED') {
+                  const payload = ev.payload || {};
+                  return (
+                    <div key={idx} className="wr-msg-card-item theme-reaper">
+                      <div className="wr-msg-avatar-icon" style={{ background: 'rgba(248, 113, 113, 0.2)' }}>
+                        <AppIcon name="reaper" size={16} color="#f87171" />
+                      </div>
+                      <div className="wr-msg-content-stack">
+                        <div className="wr-msg-header-line">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="wr-msg-speaker-name" style={{ color: '#f87171' }}>Grim Reaper</span>
+                            <span className="wr-msg-timestamp">Failure Prob: {payload.failureProbability || 38}%</span>
+                          </div>
+                          <span className="wr-msg-tag-badge" style={{ background: 'rgba(248, 113, 113, 0.2)', color: '#f87171' }}>
+                            ADVERSARIAL REVIEW
+                          </span>
+                        </div>
+                        <p className="wr-msg-quote-text">"{payload.deathSentence || 'This startup risks failure if key assumptions break.'}"</p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (ev.type === 'CHAIRMAN_COMPLETED') {
+                  const payload = ev.payload || {};
+                  return (
+                    <div key={idx} className="wr-msg-card-item theme-chairman">
+                      <div className="wr-msg-avatar-icon" style={{ background: 'rgba(245, 158, 11, 0.2)' }}>
+                        <AppIcon name="chairman" size={16} color="#fbbf24" />
+                      </div>
+                      <div className="wr-msg-content-stack">
+                        <div className="wr-msg-header-line">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="wr-msg-speaker-name" style={{ color: '#fbbf24' }}>Chairman</span>
+                            <span className="wr-msg-timestamp">Verdict Issued</span>
+                          </div>
+                          <span className="wr-msg-tag-badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
+                            {payload.recommendation || 'PROCEED WITH CONDITIONS'}
+                          </span>
+                        </div>
+                        <p className="wr-msg-quote-text">"{payload.executiveSummary || 'Quorum reached. Executive verdict rendered.'}"</p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })}
 
               <div ref={transcriptEndRef} />
             </div>

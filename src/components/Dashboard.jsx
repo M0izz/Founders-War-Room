@@ -42,7 +42,9 @@ export default function Dashboard({
   onOpenStartup,
   onNavigate,
   history = [],
-  userName = 'Moiz',
+  userName = 'Founder',
+  user = null,
+  onSignOut,
 }) {
   const activeStartup = history[0]
     ? {
@@ -81,6 +83,7 @@ export default function Dashboard({
 
   // Interactive Notifications state
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [notificationsList, setNotificationsList] = useState([
     { id: 1, title: 'Board Review Complete', desc: 'VITALINK V6 scored 8.4/10 with strong commercial traction.', time: '10m ago', type: 'info' },
     { id: 2, title: 'Risk Alert Flagged', desc: 'Grim Reaper flagged unit economics for B2C SaaS model.', time: '1h ago', type: 'risk' },
@@ -167,12 +170,52 @@ export default function Dashboard({
             </div>
           )}
 
-          <div className="v2-user-dropdown-pill">
-            <div className="v2-user-avatar">
-              <AppIcon name="user" size={14} color="#fff" />
-            </div>
-            <span className="v2-user-name">{userName}</span>
-            <AppIcon name="chevron" size={14} className="v2-dropdown-arrow" />
+          <div className="v2-user-dropdown-pill" style={{ position: 'relative' }}>
+            <button
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              onClick={() => setShowUserMenu(m => !m)}
+            >
+              <div className="v2-user-avatar" style={{
+                background: user ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : undefined,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: '12px', color: '#fff',
+              }}>
+                {user?.displayName ? user.displayName[0].toUpperCase() : <AppIcon name="user" size={14} color="#fff" />}
+              </div>
+              <span className="v2-user-name">{userName}</span>
+              <AppIcon name="chevron" size={14} className="v2-dropdown-arrow" />
+            </button>
+
+            {showUserMenu && (
+              <div style={{
+                position: 'absolute', top: '40px', right: 0, zIndex: 1000,
+                background: 'rgba(13,21,41,0.98)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '12px', padding: '8px', minWidth: '180px',
+                boxShadow: '0 12px 32px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)',
+              }}>
+                {user?.email && (
+                  <div style={{ padding: '8px 12px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '6px' }}>
+                    <div style={{ fontSize: '11px', color: '#4b5563', marginBottom: '2px', letterSpacing: '0.05em' }}>SIGNED IN AS</div>
+                    <div style={{ fontSize: '12px', color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+                  </div>
+                )}
+                <button
+                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', color: '#9ca3af', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  onClick={() => { onNavigate('settings'); setShowUserMenu(false); }}
+                >
+                  <AppIcon name="cto" size={14} /> Settings
+                </button>
+                {onSignOut && (
+                  <button
+                    id="btn-sign-out"
+                    style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', color: '#f87171', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    onClick={() => { setShowUserMenu(false); onSignOut(); }}
+                  >
+                    <AppIcon name="risk" size={14} color="#f87171" /> Sign Out
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -365,7 +408,26 @@ export default function Dashboard({
 
                       <div className="recent-card-bottom">
                         <span className="recent-time-lbl">Last meeting: {item.lastMeeting}</span>
-                        <span className="recent-continue-txt">Continue &rarr;</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {/* Legacy session badge */}
+                          {item.raw?.isLegacy && (
+                            <span style={{
+                              fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em',
+                              color: '#b45309', background: 'rgba(180,83,9,0.1)',
+                              border: '1px solid rgba(180,83,9,0.2)',
+                              borderRadius: '4px', padding: '2px 5px',
+                            }}>LOCAL</span>
+                          )}
+                          {item.raw && !item.raw.isLegacy && item.raw.userId && (
+                            <span style={{
+                              fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em',
+                              color: '#0d9488', background: 'rgba(13,148,136,0.1)',
+                              border: '1px solid rgba(13,148,136,0.2)',
+                              borderRadius: '4px', padding: '2px 5px',
+                            }}>SYNCED</span>
+                          )}
+                          <span className="recent-continue-txt">Continue &rarr;</span>
+                        </div>
                       </div>
                     </div>
                   ))}

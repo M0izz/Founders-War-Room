@@ -327,23 +327,35 @@ export default function ReportsView({
         const rawStrengths = h.analysisResult?.strengths || [];
         const rawWeaknesses = h.analysisResult?.weaknesses || h.analysisResult?.concerns || [];
         const keyFindings = [
-          ...rawStrengths.slice(0, 2).map((s) => ({ text: s, isPositive: true })),
-          ...rawWeaknesses.slice(0, 2).map((w) => ({ text: w, isPositive: false })),
+          ...rawStrengths.slice(0, 3).map((s) => ({ text: s, isPositive: true })),
+          ...rawWeaknesses.slice(0, 3).map((w) => ({ text: w, isPositive: false })),
         ];
+
+        const agentResults = h.analysisResult?.agentResults || [];
+        const dynamicPerspectives = agentResults.map((a) => ({
+          role: (a.agentName || a.role || 'EXECUTIVE').toUpperCase(),
+          title: `${a.agentName || a.name || 'Agent'} (${a.role || 'Executive'})`,
+          iconName: (a.key || a.agentKey || 'ceo').toLowerCase(),
+          color: '#3b82f6',
+          quote: a.verdict ? `"${a.verdict}"` : '"Analysis completed."',
+          verdict: (a.score || 8.0) >= 7.5 ? 'Positive' : 'Concern',
+          verdictIcon: (a.score || 8.0) >= 7.5 ? '🟢' : '🟡',
+          verdictColor: (a.score || 8.0) >= 7.5 ? '#22c55e' : '#f59e0b',
+        }));
 
         allReports.unshift({
           id: h.sessionId || h.id || `hist-${idx}`,
-          name: h.ideaData?.name || 'VITALINK',
+          name: h.ideaData?.name || 'Startup',
           subtitle: `BOARD REVIEW V${h.versionNumber || (history.length - idx)}`,
-          industry: h.ideaData?.industry || 'HealthTech',
-          date: h.createdAt ? new Date(h.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'July 31, 2026',
+          industry: h.ideaData?.industry || 'Technology',
+          date: h.createdAt ? new Date(h.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'August 1, 2026',
           session: `Board Session #${h.versionNumber || (history.length - idx)}`,
           score: h.overallScore || 8.4,
           scoreStatus: (h.overallScore || 8.4) >= 8.0 ? 'STRONG' : 'MODERATE',
           verdictStatus: h.verdict || 'PROCEED WITH CONDITIONS',
           verdictQuote: h.analysisResult?.executiveSummary || 'Board completed review of strategic direction.',
-          tags: [h.ideaData?.industry || 'HealthTech', 'Strategy', 'Board Verdict'],
-          executiveSummary: h.analysisResult?.executiveSummary || 'The board evaluated startup readiness across 8 key dimensions.',
+          tags: [h.ideaData?.industry || 'Technology', 'Strategy', 'Board Verdict'],
+          executiveSummary: h.analysisResult?.executiveSummary || `The board evaluated ${h.ideaData?.name || 'startup'} readiness across 8 key dimensions.`,
           verdictGrid: [
             { name: 'VISION', status: 'Strong', level: '🟢', color: '#22c55e' },
             { name: 'FEASIBILITY', status: 'Strong', level: '🟢', color: '#22c55e' },
@@ -351,10 +363,12 @@ export default function ReportsView({
             { name: 'GTM', status: 'Moderate', level: '🟡', color: '#f59e0b' },
             { name: 'RISK', status: 'High Risk', level: '🔴', color: '#f87171' },
           ],
-          perspectives: h.analysisResult?.agentPerspectives || DEFAULT_REPORTS_LIST[0].perspectives,
-          debates: h.analysisResult?.debates || DEFAULT_REPORTS_LIST[0].debates,
-          keyFindings: keyFindings.length > 0 ? keyFindings : DEFAULT_REPORTS_LIST[0].keyFindings,
-          nextActions: formattedActions.length > 0 ? formattedActions : DEFAULT_REPORTS_LIST[0].nextActions,
+          perspectives: dynamicPerspectives.length > 0 ? dynamicPerspectives : DEFAULT_REPORTS_LIST[0].perspectives,
+          debates: h.analysisResult?.debates || [],
+          keyFindings: keyFindings.length > 0 ? keyFindings : [{ text: `Strong interest from target audience (${h.ideaData?.targetAudience || 'users'})`, isPositive: true }],
+          nextActions: formattedActions.length > 0 ? formattedActions : [
+            { id: 'act-1', code: '01', title: `Validate ${h.ideaData?.revenueModel || 'pricing'} with target users`, desc: 'Required action item before next board review.', priority: 'HIGH' }
+          ],
           scoreBreakdown: DEFAULT_REPORTS_LIST[0].scoreBreakdown,
           rawSession: h,
         });

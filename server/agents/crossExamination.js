@@ -81,9 +81,10 @@ function findResult(results, key) {
  */
 export async function runCrossExamination(
   agentResults,
-  grimReaperResult,
   ideaData,
   sharkTankMode,
+  sessionId = 'sess_default',
+  onEvent = () => {},
 ) {
   const contradictions = [];
 
@@ -203,7 +204,31 @@ Respond in JSON:
 
     try {
       const agentDef = agents[higherKey];
-      const reEval = await callAgent(agentDef.systemPrompt, reEvalPrompt);
+      const reEval = await callAgent(
+        agentDef.systemPrompt,
+        reEvalPrompt,
+        { agentName: higher.agentName },
+      );
+
+      const contradictionPayload = {
+        dimension: contradiction.dimension,
+        agents: [contradiction.agentA, contradiction.agentB],
+        sourceAgent: contradiction.agentA,
+        targetAgent: contradiction.agentB,
+        sourceClaim: contradiction.resultA.verdict || '',
+        targetClaim: contradiction.resultB.verdict || '',
+        reasons: contradiction.reasons,
+        resolution: reEval,
+      };
+
+      onEvent({
+        sessionId,
+        type: 'CONTRADICTION_FOUND',
+        timestamp: Date.now(),
+        phase: 'CROSS_EXAMINATION',
+        agent: higher.agentName,
+        payload: contradictionPayload,
+      });
 
       revisedScores[higherKey] = {
         agent: higher.agentName,
@@ -214,12 +239,7 @@ Respond in JSON:
         reasoning: reEval.reasoning,
       };
 
-      resolvedContradictions.push({
-        dimension: contradiction.dimension,
-        agents: [contradiction.agentA, contradiction.agentB],
-        reasons: contradiction.reasons,
-        resolution: reEval,
-      });
+      resolvedContradictions.push(contradictionPayload);
 
       console.log(
         `   ⚖️  ${higher.agentName} ${reEval.action === 'REVISE' ? 'REVISED' : 'DEFENDED'}: ${higher.score} → ${reEval.revisedScore ?? higher.score}`,
@@ -235,6 +255,17 @@ Respond in JSON:
         resolution: { error: err.message },
       });
     }
+  }
+
+  if (resolvedContradictions.length === 0) {
+    onEvent({
+      sessionId,
+      type: 'NO_MATERIAL_CONTRADICTION',
+      timestamp: Date.now(),
+      phase: 'CROSS_EXAMINATION',
+      agent: 'System',
+      payload: { message: 'No material contradictions found between agent positions.' },
+    });
   }
 
   return {
