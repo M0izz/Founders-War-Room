@@ -18,6 +18,12 @@ export default function App() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState(null);
   const [historyList, setHistoryList] = useState([]);
+  const [language, setLanguage] = useState(() => localStorage.getItem('fwr_language') || 'English');
+
+  const handleLanguageChange = useCallback((newLang) => {
+    setLanguage(newLang);
+    localStorage.setItem('fwr_language', newLang);
+  }, []);
 
   // Load history on mount
   useEffect(() => {
@@ -187,6 +193,8 @@ export default function App() {
         <SettingsView
           onNavigate={handleNavigate}
           userName="Moiz"
+          language={language}
+          onLanguageChange={handleLanguageChange}
         />
       )}
     </div>

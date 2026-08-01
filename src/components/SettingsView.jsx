@@ -255,6 +255,8 @@ const TRANSLATIONS = {
 export default function SettingsView({
   onNavigate,
   userName = 'Moiz',
+  language: propLanguage,
+  onLanguageChange,
 }) {
   // Search filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -277,7 +279,13 @@ export default function SettingsView({
 
   // Dropdown states
   const [privacy, setPrivacy] = useState('Private');
-  const [language, setLanguage] = useState('English');
+  const [language, setLanguage] = useState(() => propLanguage || localStorage.getItem('fwr_language') || 'English');
+
+  useEffect(() => {
+    if (propLanguage && propLanguage !== language) {
+      setLanguage(propLanguage);
+    }
+  }, [propLanguage]);
   const [meetingLength, setMeetingLength] = useState('4 Minutes');
   const [responseDepth, setResponseDepth] = useState('Detailed');
   const [exportQuality, setExportQuality] = useState('High (PDF)');
@@ -645,7 +653,12 @@ export default function SettingsView({
                           className="settings-select"
                           value={language}
                           onChange={(e) => {
-                            setLanguage(e.target.value);
+                            const newLang = e.target.value;
+                            setLanguage(newLang);
+                            localStorage.setItem('fwr_language', newLang);
+                            if (onLanguageChange) {
+                              onLanguageChange(newLang);
+                            }
                           }}
                         >
                           <option value="English">English</option>
