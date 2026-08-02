@@ -317,6 +317,27 @@ Respond to ${targetAgentName}'s specific claim directly. Refuse generic buzzword
     payload: auditResult,
   });
 
+  // ── Compute overall score from real data ────────────────────────────────
+  // Priority: Chairman's healthScore (0-100) ÷ 10
+  // Fallback:  average of core agent scores (each 0-10)
+  // Never:     a hardcoded value
+  let overallScore = null;
+
+  if (typeof chairmanResult?.scores?.healthScore === 'number' && chairmanResult.scores.healthScore > 0) {
+    // Chairman returns healthScore as 0-100; normalise to one decimal place Number
+    overallScore = parseFloat((chairmanResult.scores.healthScore / 10).toFixed(1));
+  } else {
+    // Fall back to average of core agent scores
+    const numericScores = agentResults
+      .map((a) => (typeof a.score === 'number' ? a.score : null))
+      .filter((s) => s !== null);
+    if (numericScores.length > 0) {
+      const avg = numericScores.reduce((sum, s) => sum + s, 0) / numericScores.length;
+      overallScore = parseFloat(avg.toFixed(1));
+    }
+    // If still null: no scores were produced — leave as null; UI shows "Score unavailable"
+  }
+
   const fullResult = {
     sessionId,
     ideaData,
@@ -326,9 +347,9 @@ Respond to ${targetAgentName}'s specific claim directly. Refuse generic buzzword
     grimReaper: grimReaperResult,
     chairmanVerdict: chairmanResult,
     auditResult,
-    overallScore: chairmanResult.scores?.healthScore ? (chairmanResult.scores.healthScore / 10).toFixed(1) : 8.4,
-    verdict: chairmanResult.recommendation || 'PROCEED WITH CONDITIONS',
-    executiveSummary: chairmanResult.executiveSummary,
+    overallScore,                                           // Number | null — never a string
+    verdict: chairmanResult.recommendation || null,         // null when fallback fires
+    executiveSummary: chairmanResult.executiveSummary || null,
     strengths: chairmanResult.swot?.strengths || [],
     weaknesses: chairmanResult.swot?.weaknesses || [],
     recommendations: chairmanResult.topActions || [],
@@ -337,5 +358,6 @@ Respond to ${targetAgentName}'s specific claim directly. Refuse generic buzzword
 
   return fullResult;
 }
+
 
 export default { runWarRoom };

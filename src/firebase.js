@@ -1,8 +1,11 @@
 // Firebase app initialisation
-// Reads all config from VITE_FIREBASE_* env vars (set in .env)
-
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import {
+  initializeAuth,
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
+  GoogleAuthProvider,
+} from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -15,10 +18,15 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+// initializeAuth requires an explicit popupRedirectResolver when using
+// signInWithPopup — unlike getAuth() which bundles it automatically.
+// browserLocalPersistence keeps the user logged in across page refreshes.
+export const auth = initializeAuth(app, {
+  persistence: browserLocalPersistence,
+  popupRedirectResolver: browserPopupRedirectResolver,
+});
 
-// Request profile and email scopes for Google sign-in
+export const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
 

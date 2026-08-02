@@ -337,12 +337,19 @@ export default function SettingsView({
   const [localEncryption, setLocalEncryption] = useState(true);
   const [zeroRetention, setZeroRetention] = useState(false);
 
-  // Account & Profile modal state
-  const [profileName, setProfileName] = useState(userName);
-  const [profileEmail, setProfileEmail] = useState('moiz@example.com');
+  // Account & Profile modal state — seeded from real Firebase user
+  const [profileName, setProfileName] = useState(user?.displayName || userName);
+  const [profileEmail, setProfileEmail] = useState(user?.email || '');
   const [profileRole, setProfileRole] = useState('Founder');
   const [twoFactor, setTwoFactor] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
+  // Keep profile fields in sync if user or userName prop changes
+  useEffect(() => {
+    if (user?.displayName) setProfileName(user.displayName);
+    else if (userName) setProfileName(userName);
+    if (user?.email) setProfileEmail(user.email);
+  }, [user, userName]);
 
   // Interactive Notifications state
   const [showNotifications, setShowNotifications] = useState(false);

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 
-// ── Google Icon SVG ───────────────────────────────────────────────────────────
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -13,7 +12,6 @@ function GoogleIcon() {
   );
 }
 
-// ── Eye icons ─────────────────────────────────────────────────────────────────
 function EyeIcon({ open }) {
   return open ? (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -32,7 +30,7 @@ function EyeIcon({ open }) {
 /**
  * LoginPage — dark executive auth screen.
  * Props:
- *   onSuccess(user)  — called after successful sign-in
+ *   onSuccess(user)  — called after successful sign-in to navigate to dashboard
  *   onSignup()       — navigate to signup page
  *   onForgotPassword() — navigate to forgot password page
  */
@@ -47,20 +45,19 @@ export default function LoginPage({ onSuccess, onSignup, onForgotPassword }) {
 
   const displayError = localError || authError;
 
-  const [redirecting, setRedirecting] = useState(false);
-
   const handleGoogleSignIn = async () => {
     clearError();
     setLocalError('');
     setLoading(true);
-    setRedirecting(true);
     try {
-      await signInWithGoogle();
-      // signInWithGoogle triggers a page redirect — execution stops here.
-      // If it returns (e.g. error before redirect), reset loading.
+      const user = await signInWithGoogle();
+      if (user) {
+        onSuccess(user);
+      }
     } catch {
+      // Error handled in AuthContext
+    } finally {
       setLoading(false);
-      setRedirecting(false);
     }
   };
 
@@ -73,9 +70,11 @@ export default function LoginPage({ onSuccess, onSignup, onForgotPassword }) {
     setLoading(true);
     try {
       const user = await signInWithEmail(email.trim(), password);
-      onSuccess(user);
+      if (user) {
+        onSuccess(user);
+      }
     } catch {
-      // Error set in AuthContext
+      // Error handled in AuthContext
     } finally {
       setLoading(false);
     }
@@ -83,12 +82,10 @@ export default function LoginPage({ onSuccess, onSignup, onForgotPassword }) {
 
   return (
     <div style={styles.overlay}>
-      {/* Ambient background particles */}
       <div style={styles.bgGlow1} />
       <div style={styles.bgGlow2} />
 
       <div style={styles.card}>
-        {/* Logo / Header */}
         <div style={styles.header}>
           <div style={styles.starIcon}>✦</div>
           <h1 style={styles.title}>FOUNDER'S WAR ROOM</h1>
@@ -96,7 +93,6 @@ export default function LoginPage({ onSuccess, onSignup, onForgotPassword }) {
           <p style={styles.tagline}>Your AI board is waiting.</p>
         </div>
 
-        {/* Error banner */}
         {displayError && (
           <div style={styles.errorBanner} role="alert">
             <span style={styles.errorDot}>●</span>
@@ -104,25 +100,22 @@ export default function LoginPage({ onSuccess, onSignup, onForgotPassword }) {
           </div>
         )}
 
-        {/* Google Sign-In */}
         <button
           id="btn-google-signin"
-          style={{ ...styles.googleBtn, opacity: (loading || redirecting) ? 0.6 : 1 }}
+          style={{ ...styles.googleBtn, opacity: loading ? 0.6 : 1 }}
           onClick={handleGoogleSignIn}
-          disabled={loading || redirecting}
+          disabled={loading}
         >
           <GoogleIcon />
-          {redirecting ? 'Redirecting to Google…' : 'Continue with Google'}
+          {loading ? 'Signing in…' : 'Continue with Google'}
         </button>
 
-        {/* OR divider */}
         <div style={styles.divider}>
           <div style={styles.dividerLine} />
           <span style={styles.dividerText}>OR</span>
           <div style={styles.dividerLine} />
         </div>
 
-        {/* Email/Password form */}
         <form onSubmit={handleEmailSignIn} style={styles.form} noValidate>
           <div style={styles.fieldGroup}>
             <label style={styles.label} htmlFor="login-email">EMAIL</label>
@@ -181,7 +174,6 @@ export default function LoginPage({ onSuccess, onSignup, onForgotPassword }) {
           </button>
         </form>
 
-        {/* Signup link */}
         <p style={styles.signupText}>
           New founder?{' '}
           <button type="button" style={styles.signupLink} onClick={onSignup}>
@@ -193,7 +185,6 @@ export default function LoginPage({ onSuccess, onSignup, onForgotPassword }) {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = {
   overlay: {
     minHeight: '100vh',
@@ -246,7 +237,6 @@ const styles = {
     color: '#3b82f6',
     marginBottom: '12px',
     display: 'block',
-    letterSpacing: '0',
   },
   title: {
     fontSize: '13px',
@@ -322,7 +312,6 @@ const styles = {
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0',
   },
   fieldGroup: {
     marginBottom: '16px',
@@ -375,9 +364,7 @@ const styles = {
     padding: '0',
     marginBottom: '20px',
     fontFamily: 'inherit',
-    transition: 'color 0.2s',
     alignSelf: 'flex-end',
-    display: 'block',
   },
   submitBtn: {
     width: '100%',
@@ -391,7 +378,6 @@ const styles = {
     letterSpacing: '0.12em',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    transition: 'all 0.2s ease',
     boxShadow: '0 4px 20px rgba(37,99,235,0.3)',
   },
   signupText: {

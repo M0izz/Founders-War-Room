@@ -21,6 +21,7 @@ import {
   updateSession,
   appendSessionEvent,
   migrateExistingSessions,
+  sanitiseHistory,
 } from './utils/storage.js';
 
 // Auth views — unauthenticated only
@@ -36,11 +37,14 @@ export default function App() {
   const [activeSession, setActiveSession] = useState(null);
   const [error, setError] = useState(null);
   const [historyList, setHistoryList] = useState([]);
+  const [selectedReportId, setSelectedReportId] = useState(null);
   const [language, setLanguage] = useState(() => localStorage.getItem('fwr_language') || 'English');
 
-  // Migrate any pre-auth localStorage sessions to have isLegacy / userId fields
+  // Sanitise + migrate any pre-auth / pre-fix localStorage sessions on mount
   useEffect(() => {
     migrateExistingSessions();
+    sanitiseHistory();
+    setHistoryList(getHistory());
   }, []);
 
   const handleLanguageChange = useCallback((newLang) => {
@@ -322,6 +326,8 @@ export default function App() {
             onNavigate={handleNavigate}
             userName={displayName}
             history={historyList}
+            selectedReportId={selectedReportId}
+            onSelectReport={(id) => setSelectedReportId(id)}
             onOpenStartup={handleOpenStartup}
             onConveneBoard={handleConveneBoard}
           />

@@ -2,26 +2,19 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   onAuthStateChanged,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   updateProfile,
   signOut as firebaseSignOut,
-  browserLocalPersistence,
-  setPersistence,
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase.js';
 
 const AuthContext = createContext(null);
 
 /**
- * AuthProvider — wraps the app and provides auth state + actions.
- *
- * Google Sign-In uses signInWithRedirect (not popup) to avoid the
- * Firebase "Database is closing/hidden" IndexedDB error that appears
- * when the popup closes before auth state can be persisted.
+ * AuthProvider — provides centralized Firebase Auth state & methods.
+ * Ensures an explicit loading state until Firebase resolves onAuthStateChanged.
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -29,30 +22,7 @@ export function AuthProvider({ children }) {
   const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
-    // Ensure auth persistence is set to localStorage (not session)
-    setPersistence(auth, browserLocalPersistence).catch(() => {});
-
-    // Handle redirect result first (Google sign-in redirect flow)
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          setUser(result.user);
-        }
-      })
-      .catch((err) => {
-        // Ignore cancelled-popup or redirect errors silently;
-        // only surface real errors
-        const silent = [
-          'auth/popup-closed-by-user',
-          'auth/cancelled-popup-request',
-          'auth/redirect-cancelled-by-user',
-        ];
-        if (!silent.includes(err?.code)) {
-          setAuthError(formatAuthError(err));
-        }
-      });
-
-    // Then subscribe to ongoing auth state changes
+    // Single authoritative listener for Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
@@ -63,17 +33,16 @@ export function AuthProvider({ children }) {
 
   const clearError = useCallback(() => setAuthError(null), []);
 
-  /**
-   * Sign in with Google — uses redirect (more reliable than popup).
-   * After redirect back to the app, getRedirectResult() above handles the result.
-   */
+  /** Sign in with Google popup */
   const signInWithGoogle = useCallback(async () => {
     setAuthError(null);
     try {
-      // signInWithRedirect navigates away; the result is handled on return via getRedirectResult
-      await signInWithRedirect(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      return result.user;
     } catch (err) {
-      setAuthError(formatAuthError(err));
+      if (err?.code !== 'auth/popup-closed-by-user' && err?.code !== 'auth/cancelled-popup-request') {
+        setAuthError(formatAuthError(err));
+      }
       throw err;
     }
   }, []);
@@ -141,14 +110,12 @@ export function AuthProvider({ children }) {
   );
 }
 
-/** Hook — call inside any component inside AuthProvider */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
   return ctx;
 }
 
-// ── Readable Firebase error messages ─────────────────────────────────────────
 function formatAuthError(err) {
   const code = err?.code || '';
   const map = {
@@ -163,6 +130,7 @@ function formatAuthError(err) {
     'auth/network-request-failed':  'Network error. Check your connection.',
     'auth/cancelled-popup-request': 'Another sign-in is already in progress.',
     'auth/internal-error':          'Firebase internal error. Please try again.',
+    'auth/argument-error':          'Invalid configuration parameter.',
   };
   return map[code] || err?.message || 'An unexpected error occurred.';
 }

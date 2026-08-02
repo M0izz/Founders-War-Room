@@ -310,71 +310,134 @@ export default function ReportsView({
     { id: 3, title: 'Roster Active', desc: 'All 8 Executive Board AI Agents are operational.', time: '3h ago', type: 'info' },
   ]);
 
-  // Combine default reports with dynamic history items if available
-  const allReports = [...DEFAULT_REPORTS_LIST];
-  if (history && history.length > 0) {
-    history.forEach((h, idx) => {
-      if (!allReports.find((r) => r.id === h.id || r.id === h.sessionId)) {
-        const rawActions = h.analysisResult?.actionItems || h.analysisResult?.recommendations || [];
-        const formattedActions = rawActions.map((act, i) => ({
-          id: `act-${h.id || idx}-${i}`,
-          code: String(i + 1).padStart(2, '0'),
-          title: act,
-          desc: 'Required action item identified by the board before next review.',
-          priority: i === 0 ? 'HIGH' : 'MEDIUM',
-        }));
+  // ── Build report list EXCLUSIVELY from real stored sessions ──────────────
+  // Each report card is bound 1:1 to its sessionId. No defaults, no shared data.
+  const allReports = (history || []).map((h) => {
+    const sid = h.sessionId || h.id;
+    const result = h.analysisResult || null;
 
-        const rawStrengths = h.analysisResult?.strengths || [];
-        const rawWeaknesses = h.analysisResult?.weaknesses || h.analysisResult?.concerns || [];
-        const keyFindings = [
-          ...rawStrengths.slice(0, 3).map((s) => ({ text: s, isPositive: true })),
-          ...rawWeaknesses.slice(0, 3).map((w) => ({ text: w, isPositive: false })),
-        ];
-
-        const agentResults = h.analysisResult?.agentResults || [];
-        const dynamicPerspectives = agentResults.map((a) => ({
-          role: (a.agentName || a.role || 'EXECUTIVE').toUpperCase(),
-          title: `${a.agentName || a.name || 'Agent'} (${a.role || 'Executive'})`,
-          iconName: (a.key || a.agentKey || 'ceo').toLowerCase(),
-          color: '#3b82f6',
-          quote: a.verdict ? `"${a.verdict}"` : '"Analysis completed."',
-          verdict: (a.score || 8.0) >= 7.5 ? 'Positive' : 'Concern',
-          verdictIcon: (a.score || 8.0) >= 7.5 ? '🟢' : '🟡',
-          verdictColor: (a.score || 8.0) >= 7.5 ? '#22c55e' : '#f59e0b',
-        }));
-
-        allReports.unshift({
-          id: h.sessionId || h.id || `hist-${idx}`,
-          name: h.ideaData?.name || 'Startup',
-          subtitle: `BOARD REVIEW V${h.versionNumber || (history.length - idx)}`,
-          industry: h.ideaData?.industry || 'Technology',
-          date: h.createdAt ? new Date(h.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'August 1, 2026',
-          session: `Board Session #${h.versionNumber || (history.length - idx)}`,
-          score: h.overallScore || 8.4,
-          scoreStatus: (h.overallScore || 8.4) >= 8.0 ? 'STRONG' : 'MODERATE',
-          verdictStatus: h.verdict || 'PROCEED WITH CONDITIONS',
-          verdictQuote: h.analysisResult?.executiveSummary || 'Board completed review of strategic direction.',
-          tags: [h.ideaData?.industry || 'Technology', 'Strategy', 'Board Verdict'],
-          executiveSummary: h.analysisResult?.executiveSummary || `The board evaluated ${h.ideaData?.name || 'startup'} readiness across 8 key dimensions.`,
-          verdictGrid: [
-            { name: 'VISION', status: 'Strong', level: '🟢', color: '#22c55e' },
-            { name: 'FEASIBILITY', status: 'Strong', level: '🟢', color: '#22c55e' },
-            { name: 'VIABILITY', status: 'Moderate', level: '🟡', color: '#f59e0b' },
-            { name: 'GTM', status: 'Moderate', level: '🟡', color: '#f59e0b' },
-            { name: 'RISK', status: 'High Risk', level: '🔴', color: '#f87171' },
-          ],
-          perspectives: dynamicPerspectives.length > 0 ? dynamicPerspectives : DEFAULT_REPORTS_LIST[0].perspectives,
-          debates: h.analysisResult?.debates || [],
-          keyFindings: keyFindings.length > 0 ? keyFindings : [{ text: `Strong interest from target audience (${h.ideaData?.targetAudience || 'users'})`, isPositive: true }],
-          nextActions: formattedActions.length > 0 ? formattedActions : [
-            { id: 'act-1', code: '01', title: `Validate ${h.ideaData?.revenueModel || 'pricing'} with target users`, desc: 'Required action item before next board review.', priority: 'HIGH' }
-          ],
-          scoreBreakdown: DEFAULT_REPORTS_LIST[0].scoreBreakdown,
-          rawSession: h,
-        });
-      }
+    // ── Agent perspectives from real agentResults ─────────────────────────
+    const AGENT_ICON_MAP = {
+      ceo: 'ceo', cto: 'cto', investor: 'investor', marketing: 'marketing',
+      customer: 'customer', risk: 'risk', 'risk advisor': 'risk',
+      'grim reaper': 'reaper', reaper: 'reaper', chairman: 'chairman',
+    };
+    const AGENT_COLOR_MAP = {
+      ceo: '#3b82f6', cto: '#0284c7', investor: '#d97706', marketing: '#7e22ce',
+      customer: '#15803d', risk: '#c2410c', 'risk advisor': '#c2410c',
+      'grim reaper': '#991b1b', reaper: '#991b1b', chairman: '#b45309',
+    };
+    const agentResults = result?.agentResults || [];
+    const perspectives = agentResults.map((a) => {
+      const key = (a.agentKey || a.key || a.agentName || '').toLowerCase();
+      const score = typeof a.score === 'number' ? a.score : null;
+      const isPositive = score !== null ? score >= 7.5 : true;
+      return {
+        role: (a.agentName || a.role || 'EXECUTIVE').toUpperCase(),
+        title: a.agentName || a.name || 'Agent',
+        iconName: AGENT_ICON_MAP[key] || 'ceo',
+        color: AGENT_COLOR_MAP[key] || '#3b82f6',
+        quote: a.verdict ? `"${a.verdict}"` : (a.analysis ? `"${String(a.analysis).slice(0, 120)}…"` : '"Analysis completed."'),
+        verdict: isPositive ? 'Positive' : 'Concern',
+        verdictIcon: isPositive ? '🟢' : '🟡',
+        verdictColor: isPositive ? '#22c55e' : '#f59e0b',
+      };
     });
-  }
+
+    // ── Key findings from real strengths / concerns ───────────────────────
+    const rawStrengths = result?.strengths || [];
+    const rawWeaknesses = result?.weaknesses || result?.concerns || [];
+    const keyFindings = [
+      ...rawStrengths.slice(0, 3).map((s) => ({ text: s, isPositive: true })),
+      ...rawWeaknesses.slice(0, 3).map((w) => ({ text: w, isPositive: false })),
+    ];
+
+    // ── Action items from real recommendations ────────────────────────────
+    const rawActions = result?.actionItems || result?.recommendations || [];
+    const nextActions = rawActions.map((act, i) => ({
+      id: `act-${sid}-${i}`,
+      code: String(i + 1).padStart(2, '0'),
+      title: typeof act === 'string' ? act : act?.title || 'Review this item',
+      desc: typeof act === 'object' && act?.description ? act.description : 'Action item identified by the board.',
+      priority: i === 0 ? 'HIGH' : 'MEDIUM',
+    }));
+
+    // ── Score breakdown from per-agent scores (real data only) ────────────
+    const scoreBreakdown = agentResults
+      .filter((a) => typeof a.score === 'number')
+      .map((a) => ({
+        category: a.agentName || a.name || 'Agent',
+        current: a.score,
+        previous: null,
+        trend: 'neutral',
+      }));
+
+    // ── Tags derived from real session data ───────────────────────────────
+    const industry = h.ideaData?.industry || null;
+    const verdict = h.verdict || result?.verdict || null;
+    const tags = [
+      industry,
+      verdict,
+      h.sharkTankMode ? 'Shark Tank Mode' : null,
+    ].filter(Boolean);
+    if (tags.length === 0) tags.push('Board Review');
+
+    // ── Verdict grid from real scores (or omit if no data) ───────────────
+    const verdictGrid = [
+      'VISION', 'FEASIBILITY', 'VIABILITY', 'GTM', 'RISK'
+    ].map((dim) => {
+      const match = agentResults.find((a) =>
+        (a.agentName || a.name || '').toUpperCase().includes(dim) ||
+        (a.agentKey || '').toUpperCase().includes(dim)
+      );
+      const s = match?.score;
+      if (s === undefined || s === null) {
+        return { name: dim, status: '—', level: '⬜', color: '#4b5563' };
+      }
+      return {
+        name: dim,
+        status: s >= 8.0 ? 'Strong' : s >= 6.5 ? 'Moderate' : 'Needs Work',
+        level: s >= 8.0 ? '🟢' : s >= 6.5 ? '🟡' : '🔴',
+        color: s >= 8.0 ? '#22c55e' : s >= 6.5 ? '#f59e0b' : '#f87171',
+      };
+    });
+
+    // ── Score: strictly from stored value, never invented ─────────────────
+    const overallScore = (typeof h.overallScore === 'number') ? h.overallScore : null;
+    const scoreStatus = overallScore === null ? 'UNKNOWN' : overallScore >= 8.0 ? 'STRONG' : 'MODERATE';
+
+    return {
+      id: sid,
+      sessionId: sid,
+      name: (h.ideaData?.name || 'Unnamed Startup').toUpperCase(),
+      subtitle: `BOARD REVIEW V${h.versionNumber || 1}`,
+      industry: industry || 'Technology',
+      date: h.createdAt
+        ? new Date(h.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'Date unavailable',
+      session: `Board Session #${h.versionNumber || 1}`,
+      score: overallScore,
+      scoreStatus,
+      verdictStatus: verdict || 'PENDING',
+      verdictQuote: result?.chairmanVerdict || result?.executiveSummary || null,
+      tags,
+      executiveSummary: result?.executiveSummary || result?.chairmanVerdict || null,
+      verdictGrid,
+      perspectives,
+      debates: result?.debates || result?.contradictions || [],
+      keyFindings,
+      nextActions,
+      scoreBreakdown,
+      rawSession: h,
+    };
+  });
+
+  // Sort newest first (by sessionStartedAt or createdAt)
+  allReports.sort((a, b) => {
+    const ta = a.rawSession?.sessionStartedAt || new Date(a.rawSession?.createdAt || 0).getTime();
+    const tb = b.rawSession?.sessionStartedAt || new Date(b.rawSession?.createdAt || 0).getTime();
+    return tb - ta;
+  });
 
   // Filter Level 1 list
   const filteredReports = allReports.filter((r) => {
@@ -397,7 +460,9 @@ export default function ReportsView({
     return 0; // default newest
   });
 
-  const selectedReport = allReports.find((r) => r.id === selectedReportId) || allReports[0];
+  const selectedReport = selectedReportId
+    ? allReports.find((r) => r.id === selectedReportId) || null
+    : null;
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -666,7 +731,15 @@ export default function ReportsView({
 
               {/* Report List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {filteredReports.length === 0 ? (
+                {allReports.length === 0 ? (
+                  <div className="glass-panel" style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '16px' }}>📋</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '8px' }}>No Board Reports Yet</div>
+                    <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
+                      Run your first War Room session to generate a board report.
+                    </div>
+                  </div>
+                ) : filteredReports.length === 0 ? (
                   <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
                     No reports match your search query.
                   </div>
@@ -735,17 +808,25 @@ export default function ReportsView({
                           <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 800, marginBottom: '2px' }}>
                             Board Score
                           </div>
-                          <div style={{ fontSize: '1.25rem', fontWeight: 900, color: report.score >= 8.0 ? '#4ade80' : '#fbbf24' }}>
-                            {report.score} <span style={{ fontSize: '0.85rem', color: '#64748b' }}>/ 10</span>
-                          </div>
-                          <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', marginTop: '6px', overflow: 'hidden' }}>
-                            <div style={{
-                              width: `${(report.score / 10) * 100}%`,
-                              height: '100%',
-                              background: report.score >= 8.0 ? 'linear-gradient(90deg, #4ade80, #38bdf8)' : 'linear-gradient(90deg, #fbbf24, #f87171)',
-                              borderRadius: '10px'
-                            }} />
-                          </div>
+                          {report.score !== null && report.score !== undefined ? (
+                            <>
+                              <div style={{ fontSize: '1.25rem', fontWeight: 900, color: report.score >= 8.0 ? '#4ade80' : '#fbbf24' }}>
+                                {report.score} <span style={{ fontSize: '0.85rem', color: '#64748b' }}>/ 10</span>
+                              </div>
+                              <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', marginTop: '6px', overflow: 'hidden' }}>
+                                <div style={{
+                                  width: `${(report.score / 10) * 100}%`,
+                                  height: '100%',
+                                  background: report.score >= 8.0 ? 'linear-gradient(90deg, #4ade80, #38bdf8)' : 'linear-gradient(90deg, #fbbf24, #f87171)',
+                                  borderRadius: '10px'
+                                }} />
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ fontSize: '0.88rem', color: '#64748b', fontStyle: 'italic' }}>
+                              Score unavailable
+                            </div>
+                          )}
                         </div>
 
                         <button
@@ -816,18 +897,26 @@ export default function ReportsView({
                   border: '1px solid rgba(255, 255, 255, 0.08)',
                   textAlign: 'center'
                 }}>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24', lineHeight: 1 }}>
-                    {selectedReport.score} <span style={{ fontSize: '1.1rem', color: '#64748b' }}>/ 10</span>
-                  </div>
-                  <div style={{
-                    fontSize: '0.8rem',
-                    fontWeight: 900,
-                    color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24',
-                    letterSpacing: '1px',
-                    marginTop: '4px'
-                  }}>
-                    {selectedReport.scoreStatus}
-                  </div>
+                  {selectedReport.score !== null && selectedReport.score !== undefined ? (
+                    <>
+                      <div style={{ fontSize: '2.2rem', fontWeight: 900, color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24', lineHeight: 1 }}>
+                        {selectedReport.score} <span style={{ fontSize: '1.1rem', color: '#64748b' }}>/ 10</span>
+                      </div>
+                      <div style={{
+                        fontSize: '0.8rem',
+                        fontWeight: 900,
+                        color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24',
+                        letterSpacing: '1px',
+                        marginTop: '4px'
+                      }}>
+                        {selectedReport.scoreStatus}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: '0.9rem', color: '#64748b', fontStyle: 'italic' }}>
+                      Score unavailable
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -842,7 +931,7 @@ export default function ReportsView({
                   Executive Summary
                 </h3>
                 <p style={{ margin: '0 0 24px 0', fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.6' }}>
-                  {selectedReport.executiveSummary}
+                  {selectedReport.executiveSummary || <span style={{ color: '#4b5563', fontStyle: 'italic' }}>Analysis summary not available — the board session may still be in progress.</span>}
                 </p>
 
                 <h4 style={{ margin: '0 0 14px 0', fontSize: '0.85rem', fontWeight: 900, color: '#94a3b8', letterSpacing: '1px' }}>
@@ -1136,7 +1225,7 @@ export default function ReportsView({
                           {s.category}
                         </div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff', marginTop: '2px' }}>
-                          {s.current} <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>prev {s.previous}</span>
+                          {s.current} <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>prev {s.previous !== null && s.previous !== undefined ? s.previous : '—'}</span>
                         </div>
                       </div>
                       <span style={{

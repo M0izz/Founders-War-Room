@@ -49,37 +49,31 @@ export default function Dashboard({
   const activeStartup = history[0]
     ? {
       id: history[0].id,
-      name: history[0].ideaData?.name || 'VITALINK',
-      industry: history[0].ideaData?.industry || 'HealthTech',
-      description: history[0].ideaData?.description || 'An app that tells users medical history, allergies, diagnosis, etc. by scanning the QR code.',
-      score: history[0].overallScore || 8.4,
+      name: history[0].ideaData?.name || 'Unnamed Startup',
+      industry: history[0].ideaData?.industry || null,
+      description: history[0].ideaData?.description || '',
+      score: typeof history[0].overallScore === 'number' ? history[0].overallScore : null,
       status: 'Ready for Board Review',
-      updatedAt: '2 Hours Ago',
+      updatedAt: history[0].createdAt ? new Date(history[0].createdAt).toLocaleDateString() : '—',
       raw: history[0],
     }
-    : {
-      name: 'VITALINK',
-      industry: 'HealthTech',
-      description: 'An app that tells users medical history, allergies, diagnosis, etc. by scanning the QR code.',
-      score: 8.4,
-      status: 'Ready for Board Review',
-      updatedAt: '2 Hours Ago',
-    };
+    : null;
 
   const recentList = history.length > 0
     ? history.slice(0, 3).map((h, i) => ({
-      id: h.id,
+      id: h.sessionId || h.id,
+      sessionId: h.sessionId || h.id,
       name: h.ideaData?.name || 'Unnamed',
-      industry: h.ideaData?.industry || 'General',
+      industry: h.ideaData?.industry || null,
       iconName: RECENT_STARTUPS_DATA[i % 3].iconName,
       iconColor: RECENT_STARTUPS_DATA[i % 3].iconColor,
-      score: h.overallScore || 8.4,
-      status: h.verdict || 'Approved',
-      statusColor: h.verdict === 'Approved' ? '#22c55e' : '#f59e0b',
-      lastMeeting: new Date(h.createdAt).toLocaleDateString(),
+      score: typeof h.overallScore === 'number' ? h.overallScore : null,
+      verdict: h.verdict || null,
+      statusColor: '#f59e0b',
+      lastMeeting: h.createdAt ? new Date(h.createdAt).toLocaleDateString() : '—',
       raw: h,
     }))
-    : RECENT_STARTUPS_DATA;
+    : [];
 
   // Interactive Notifications state
   const [showNotifications, setShowNotifications] = useState(false);
@@ -298,12 +292,18 @@ export default function Dashboard({
 
                     <div className="v2-mission-title-group">
                       <span className="v2-mission-sub">Today's Mission</span>
-                      <h1 className="v2-mission-heading">{activeStartup.name}</h1>
-                      <span className="v2-industry-pill">{activeStartup.industry}</span>
+                      {activeStartup ? (
+                        <>
+                          <h1 className="v2-mission-heading">{activeStartup.name}</h1>
+                          {activeStartup.industry && <span className="v2-industry-pill">{activeStartup.industry}</span>}
+                        </>
+                      ) : (
+                        <h1 className="v2-mission-heading" style={{ color: '#64748b' }}>No sessions yet</h1>
+                      )}
                     </div>
 
                     <p className="v2-mission-description">
-                      {activeStartup.description}
+                      {activeStartup?.description || 'Convene the board to evaluate your first startup idea.'}
                     </p>
 
                     {/* Stats Boxes */}
@@ -312,7 +312,7 @@ export default function Dashboard({
                         <AppIcon name="target" size={18} color="#fbbf24" />
                         <div className="stat-text-stack">
                           <span className="stat-label-muted">STATUS</span>
-                          <span className="stat-value-gold">Ready for Board Review</span>
+                          <span className="stat-value-gold">{activeStartup ? 'Ready for Board Review' : 'Awaiting First Session'}</span>
                         </div>
                       </div>
 
@@ -320,7 +320,7 @@ export default function Dashboard({
                         <AppIcon name="clock" size={18} color="#38bdf8" />
                         <div className="stat-text-stack">
                           <span className="stat-label-muted">LAST ANALYSIS</span>
-                          <span className="stat-value-white">2 Hours Ago</span>
+                          <span className="stat-value-white">{activeStartup?.updatedAt || '—'}</span>
                         </div>
                       </div>
                     </div>
@@ -364,10 +364,10 @@ export default function Dashboard({
                 <div className="v2-hero-action-footer">
                   <button
                     className="v2-btn-enter-warroom-glowing"
-                    onClick={() => onOpenStartup(activeStartup.raw || activeStartup)}
+                    onClick={() => activeStartup ? onOpenStartup(activeStartup.raw || activeStartup) : onConveneBoard()}
                   >
                     <AppIcon name="ceo" size={18} color="#fbbf24" />
-                    <span>Enter War Room</span>
+                    <span>{activeStartup ? 'Enter War Room' : 'Convene the Board'}</span>
                     <span className="btn-arrow-right">&gt;</span>
                   </button>
                 </div>
@@ -395,15 +395,19 @@ export default function Dashboard({
                         </div>
                         <div>
                           <h4 className="recent-app-title">{item.name}</h4>
-                          <span className="recent-app-ind">{item.industry}</span>
+                          {item.industry && <span className="recent-app-ind">{item.industry}</span>}
                         </div>
                       </div>
 
                       <div className="recent-card-mid">
-                        <span className="recent-score-val">{item.score}</span>
-                        <span className="recent-status-pill" style={{ color: item.statusColor }}>
-                          ● {item.status}
+                        <span className="recent-score-val">
+                          {item.score !== null && item.score !== undefined ? item.score : '—'}
                         </span>
+                        {item.verdict && (
+                          <span className="recent-status-pill" style={{ color: '#f59e0b' }}>
+                            ● {item.verdict}
+                          </span>
+                        )}
                       </div>
 
                       <div className="recent-card-bottom">

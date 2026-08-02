@@ -172,7 +172,7 @@ export function getVersions(startupName) {
 
 export function getAnalysisById(id) {
   const history = getHistory();
-  return history.find((entry) => entry.id === id) || null;
+  return history.find((entry) => entry.id === id || entry.sessionId === id) || null;
 }
 
 export function updateNotes(id, notes) {
@@ -208,6 +208,56 @@ export function getLatestVersion() {
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+/**
+ * One-time migration: sanitise all existing sessions in localStorage.
+ * - Converts string overallScore (e.g. "8.4") to a real Number
+ * - Sets status = 'INCOMPLETE' on records that have no analysisResult
+ * - This is safe to run on every app mount (idempotent)
+ */
+export function sanitiseHistory() {
+  const history = getHistory();
+  let changed = false;
+  const sanitised = history.map((entry) => {
+    let updated = { ...entry };
+
+    // Convert string overallScore → Number
+    if (typeof updated.overallScore === 'string') {
+      const parsed = parseFloat(updated.overallScore);
+      updated.overallScore = isNaN(parsed) ? null : parsed;
+      changed = true;
+    }
+
+    // Mark sessions that completed but have no real analysis
+    if (
+      updated.status === 'COMPLETED' &&
+      !updated.analysisResult
+    ) {
+      updated.status = 'INCOMPLETE';
+      changed = true;
+    }
+
+    // Null out the hardcoded fallback verdict if it's still on old records with no real analysis
+    if (
+      updated.verdict === 'PROCEED WITH CONDITIONS' &&
+      !updated.analysisResult?.verdict &&
+      !updated.analysisResult?.recommendation
+    ) {
+      updated.verdict = null;
+      changed = true;
+    }
+
+    return updated;
+  });
+
+  if (changed) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitised));
+    } catch (e) {
+      console.warn('sanitiseHistory: failed to write:', e);
+    }
+  }
 }
 
 /**
