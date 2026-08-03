@@ -8,7 +8,28 @@ import {
   where
 } from 'firebase/firestore';
 
-const STORAGE_KEY = 'warroom_history';
+const STORAGE_KEY_PREFIX = 'warroom_history';
+
+// Per-user scoping: when a user is authenticated the storage key becomes
+// warroom_history_{uid}. Before auth resolves we use the bare key so that
+// pre-existing anonymous/legacy data can still be read for migration.
+let _currentUserId = null;
+
+function storageKey() {
+  return _currentUserId
+    ? `${STORAGE_KEY_PREFIX}_${_currentUserId}`
+    : STORAGE_KEY_PREFIX;
+}
+
+/** Call on login — scopes all localStorage reads/writes to this user. */
+export function setCurrentUserId(uid) {
+  _currentUserId = uid || null;
+}
+
+/** Call on logout — resets to anonymous/unscoped key. */
+export function clearCurrentUserId() {
+  _currentUserId = null;
+}
 
 function slugify(name) {
   return 'startup_' + (name || 'unnamed').toLowerCase().replace(/[^a-z0-9]+/g, '_');
@@ -97,7 +118,10 @@ export async function syncLocalHistoryToFirestore(userId) {
   if (!db || !userId) return;
   const history = getHistory();
   for (const session of history) {
-    const updated = { ...session, userId: session.userId || userId, isLegacy: false };
+    // Only sync sessions that already belong to this user (or have no owner).
+    // NEVER re-stamp another user's session with the current UID.
+    if (session.userId && session.userId !== userId) continue;
+    const updated = { ...session, userId, isLegacy: false };
     await saveSessionToFirestore(updated);
   }
 }
@@ -150,7 +174,7 @@ export function createSession(ideaData, sharkTankMode = false, userId = null) {
   if (history.length > 50) history.pop();
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    localStorage.setItem(storageKey(), JSON.stringify(history));
   } catch (e) {
     console.warn('Failed to save session to localStorage:', e);
   }
@@ -185,7 +209,7 @@ export function updateSession(sessionId, patchData) {
 
   history[index] = updated;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    localStorage.setItem(storageKey(), JSON.stringify(history));
   } catch (e) {
     console.warn('Failed to update session in localStorage:', e);
   }
@@ -205,7 +229,7 @@ export function appendSessionEvent(sessionId, event) {
   target.events.push(event);
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    localStorage.setItem(storageKey(), JSON.stringify(history));
   } catch (e) {
     console.warn('Failed to append event to localStorage:', e);
   }
@@ -268,122 +292,13 @@ function computeAddressedRecommendations(oldResult, newIdea, newResult) {
   return addressed.length > 0 ? addressed : [prevActions[0] || 'Updated strategic alignment'];
 }
 
-const DEFAULT_SEED_HISTORY = [
-  {
-    id: 'vitalink-v6',
-    sessionId: 'vitalink-v6',
-    startupId: 'startup_vitalink',
-    userId: null,
-    isLegacy: true,
-    createdAt: '2026-07-31T12:00:00.000Z',
-    sessionStartedAt: 1785499200000,
-    completedAt: '2026-07-31T12:05:00.000Z',
-    status: 'COMPLETED',
-    versionNumber: 6,
-    overallScore: 8.4,
-    verdict: 'APPROVED WITH CONDITIONS',
-    sharkTankMode: false,
-    ideaData: {
-      name: 'VITALINK',
-      industry: 'HealthTech',
-      description: 'QR-code based emergency medical history & allergy access for surgery & emergency care.',
-      targetAudience: 'Emergency medical teams & patient families',
-      revenueModel: 'Subscription (SaaS)'
-    },
-    analysisResult: {
-      overallScore: 8.4,
-      verdict: 'APPROVED WITH CONDITIONS',
-      executiveSummary: 'The board believes VITALINK has strong emergency-healthcare potential, but monetization and hospital adoption remain the primary concerns before scaling.',
-      strengths: [
-        'Strong emergency-use proposition',
-        'Clear target customer identified',
-        'QR-based workflow is differentiated'
-      ],
-      weaknesses: [
-        'Monetization strategy remains unclear',
-        'Hospital onboarding may be difficult',
-        'Regulatory considerations need investigation'
-      ],
-      actionItems: [
-        { id: 'act-1', code: '01', title: 'Validate pricing', description: 'Interview 10 hospital administrators', priority: 'HIGH' },
-        { id: 'act-2', code: '02', title: 'Test QR workflow', description: 'Run 20 emergency-use simulations', priority: 'HIGH' },
-        { id: 'act-3', code: '03', title: 'Research regulatory requirements', description: 'Identify applicable healthcare regulations', priority: 'MEDIUM' }
-      ],
-      agentResults: [
-        { agentName: 'Marcus Vance (CEO)', agentKey: 'ceo', role: 'CEO', score: 8.6, verdict: 'The core proposition is compelling, but hospital partnerships need validation.' },
-        { agentName: 'Priya Desai (Investor)', agentKey: 'investor', role: 'INVESTOR', score: 7.1, verdict: 'Revenue model remains insufficiently validated.' },
-        { agentName: 'Dr. Aris Thorne (CTO)', agentKey: 'cto', role: 'CTO', score: 8.8, verdict: 'Architecture is solid, but HIPAA compliance & QR encryption need rigorous audit.' },
-        { agentName: 'Elena Rostova (CMO)', agentKey: 'marketing', role: 'MARKETING', score: 7.8, verdict: 'B2C messaging resonates, but B2B hospital sales cycle is long.' },
-        { agentName: 'Samir Khan (Customer)', agentKey: 'customer', role: 'CUSTOMER', score: 9.0, verdict: 'Emergency doctors love immediate QR scanning without logins.' },
-        { agentName: 'Dr. Quinn Hayes (Risk)', agentKey: 'risk', role: 'RISK ADVISOR', score: 6.9, verdict: 'Data privacy liability in trauma cases requires legal coverage.' },
-        { agentName: 'Grim Reaper', agentKey: 'reaper', role: 'DEVIL\'S ADVOCATE', score: 6.5, verdict: 'If hospitals refuse API integration, this model dies in 6 months.' },
-        { agentName: 'Board Chair', agentKey: 'chairman', role: 'CHAIRMAN', score: 8.4, verdict: 'Promising foundation. Proceed with strict hospital pilot criteria.' }
-      ]
-    }
-  },
-  {
-    id: 'medora-v4',
-    sessionId: 'medora-v4',
-    startupId: 'startup_medora',
-    userId: null,
-    isLegacy: true,
-    createdAt: '2026-07-28T10:00:00.000Z',
-    sessionStartedAt: 1785235200000,
-    completedAt: '2026-07-28T10:05:00.000Z',
-    status: 'COMPLETED',
-    versionNumber: 4,
-    overallScore: 7.9,
-    verdict: 'APPROVED WITH CONDITIONS',
-    sharkTankMode: false,
-    ideaData: {
-      name: 'MEDORA',
-      industry: 'HealthTech',
-      description: 'AI-driven diagnostic laboratory framework for blood analysis and diagnostic accuracy.',
-      targetAudience: 'Private clinics & diagnostic labs',
-      revenueModel: 'Monthly subscription ($499/mo)'
-    },
-    analysisResult: {
-      overallScore: 7.9,
-      verdict: 'APPROVED WITH CONDITIONS',
-      executiveSummary: 'Medora presents an AI-driven blood diagnostic framework with strong initial laboratory trial scores.',
-      strengths: [
-        'Proprietary AI diagnostic accuracy',
-        '94% diagnostic accuracy achieved in clinical trials',
-        'Strong pilot engagement with 5 private clinics'
-      ],
-      weaknesses: [
-        'FDA clinical trial timeline is 18 months',
-        'Regulatory clearance still pending'
-      ],
-      actionItems: [
-        { id: 'act-med-1', code: '01', title: 'Engage FDA consultant', description: 'Map Class II medical device approval pathway', priority: 'HIGH' },
-        { id: 'act-med-2', code: '02', title: 'Expand Clinic Pilots', description: 'Onboard 5 additional diagnostic labs', priority: 'MEDIUM' }
-      ],
-      agentResults: [
-        { agentName: 'Marcus Vance (CEO)', agentKey: 'ceo', role: 'CEO', score: 8.2, verdict: 'Clinical pilot traction is encouraging.' },
-        { agentName: 'Priya Desai (Investor)', agentKey: 'investor', role: 'INVESTOR', score: 7.5, verdict: 'SaaS pricing validated, but capital requirement for FDA trial is high.' },
-        { agentName: 'Dr. Aris Thorne (CTO)', agentKey: 'cto', role: 'CTO', score: 8.5, verdict: 'Diagnostic AI algorithm achieves >94% precision on test datasets.' },
-        { agentName: 'Elena Rostova (CMO)', agentKey: 'marketing', role: 'MARKETING', score: 7.9, verdict: 'Diagnostic accuracy data is compelling for private clinic sales reps.' },
-        { agentName: 'Samir Khan (Customer)', agentKey: 'customer', role: 'CUSTOMER', score: 8.4, verdict: 'Pathologists report significant time reduction per diagnostic scan.' },
-        { agentName: 'Dr. Quinn Hayes (Risk)', agentKey: 'risk', role: 'RISK ADVISOR', score: 7.0, verdict: 'Class II medical device classification carries liability risks.' },
-        { agentName: 'Grim Reaper', agentKey: 'reaper', role: 'DEVIL\'S ADVOCATE', score: 6.8, verdict: 'FDA approval delays could exhaust runway before commercialization.' },
-        { agentName: 'Board Chair', agentKey: 'chairman', role: 'CHAIRMAN', score: 7.9, verdict: 'Medora presents an AI-driven blood diagnostic framework with strong trial scores.' }
-      ]
-    }
-  }
-];
-
 export function getHistory() {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    const data = localStorage.getItem(storageKey());
     const parsed = data ? JSON.parse(data) : [];
-    if (!parsed || parsed.length === 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SEED_HISTORY));
-      return DEFAULT_SEED_HISTORY;
-    }
-    return parsed;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return DEFAULT_SEED_HISTORY;
+    return [];
   }
 }
 
@@ -406,7 +321,7 @@ export function updateNotes(id, notes) {
   const updated = history.map((entry) =>
     entry.id === id ? { ...entry, founderNotes: notes } : entry
   );
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  localStorage.setItem(storageKey(), JSON.stringify(updated));
 }
 
 export function toggleFavorite(id) {
@@ -414,17 +329,26 @@ export function toggleFavorite(id) {
   const updated = history.map((entry) =>
     entry.id === id ? { ...entry, isFavorite: !entry.isFavorite } : entry
   );
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  localStorage.setItem(storageKey(), JSON.stringify(updated));
 }
 
 export function deleteVersion(id) {
   const history = getHistory();
   const filtered = history.filter((entry) => entry.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  localStorage.setItem(storageKey(), JSON.stringify(filtered));
 }
 
 export function clearHistory() {
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(storageKey());
+}
+
+/** Wipe the current user's local cache on sign-out. */
+export function clearLocalHistory() {
+  try {
+    localStorage.removeItem(storageKey());
+  } catch (e) {
+    console.warn('clearLocalHistory failed:', e);
+  }
 }
 
 export function getLatestVersion() {
@@ -479,7 +403,7 @@ export function sanitiseHistory() {
 
   if (changed) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitised));
+      localStorage.setItem(storageKey(), JSON.stringify(sanitised));
     } catch (e) {
       console.warn('sanitiseHistory: failed to write:', e);
     }
@@ -502,7 +426,7 @@ export function migrateExistingSessions() {
   });
   if (changed) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      localStorage.setItem(storageKey(), JSON.stringify(migrated));
     } catch (e) {
       console.warn('Failed to migrate sessions:', e);
     }
@@ -519,7 +443,7 @@ export function importSessionToAccount(sessionId, userId) {
   if (idx === -1 || !userId) return null;
   history[idx] = { ...history[idx], userId, isLegacy: false };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    localStorage.setItem(storageKey(), JSON.stringify(history));
   } catch (e) {
     console.warn('Failed to import session:', e);
   }

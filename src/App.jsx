@@ -25,6 +25,8 @@ import {
   sanitiseHistory,
   syncLocalHistoryToFirestore,
   fetchUserSessionsFromFirestore,
+  setCurrentUserId,
+  clearCurrentUserId,
 } from './utils/storage.js';
 
 // Auth views — unauthenticated only
@@ -43,33 +45,34 @@ export default function App() {
   const [selectedReportId, setSelectedReportId] = useState(null);
   const [language, setLanguage] = useState(() => localStorage.getItem('fwr_language') || 'English');
 
-  // Sanitise + migrate any pre-auth / pre-fix localStorage sessions on mount
-  useEffect(() => {
-    migrateExistingSessions();
-    sanitiseHistory();
-    setHistoryList(getHistory());
-  }, []);
-
   const handleLanguageChange = useCallback((newLang) => {
     setLanguage(newLang);
     localStorage.setItem('fwr_language', newLang);
   }, []);
 
-  // Load and sync history with Firestore whenever user or view changes
+  // Load and sync history with Firestore whenever auth state or view changes
   useEffect(() => {
+    if (authLoading) return;
+
     async function loadHistory() {
       if (user?.uid) {
+        setCurrentUserId(user.uid);
+        migrateExistingSessions();
+        sanitiseHistory();
         await syncLocalHistoryToFirestore(user.uid);
         const cloudSessions = await fetchUserSessionsFromFirestore(user.uid);
         if (cloudSessions && cloudSessions.length > 0) {
           setHistoryList(cloudSessions);
           return;
         }
+        setHistoryList(getHistory());
+      } else {
+        setCurrentUserId(null);
+        setHistoryList([]);
       }
-      setHistoryList(getHistory());
     }
     loadHistory();
-  }, [user, currentView]);
+  }, [user, authLoading, currentView]);
 
   // ── Auth state guards ─────────────────────────────────────────────────────
   // Synchronously compute the view to render — avoids post-redirect
@@ -95,12 +98,14 @@ export default function App() {
   }, []);
 
   const handleSignOut = useCallback(async () => {
-    await signOut();
-    setCurrentView('landing');
+    clearCurrentUserId();
+    setHistoryList([]);
     setActiveSession(null);
     setAnalysisResult(null);
     setIdeaData(null);
     setError(null);
+    await signOut();
+    setCurrentView('landing');
   }, [signOut]);
 
   // ── Navigation ────────────────────────────────────────────────────────────

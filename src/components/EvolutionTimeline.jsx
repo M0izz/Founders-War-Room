@@ -2,255 +2,8 @@ import React, { useState, useMemo, useContext } from 'react';
 import { LanguageContext } from '../contexts/LanguageContext.jsx';
 import AppIcon from './AppIcon.jsx';
 
-// Pre-populated initial startup dataset
-const BASE_STARTUPS = {
-  VITALINK: {
-    id: 'VITALINK',
-    name: 'VITALINK',
-    category: 'HealthTech',
-    versions: [
-      {
-        version: 'V6',
-        isLatest: true,
-        score: 8.4,
-        date: 'Jul 31, 2026',
-        focus: 'Monetization & Scaling',
-        targetAudience: 'Emergency healthcare providers',
-        revenue: 'B2B SaaS ($299/mo)',
-        mvp: 'QR emergency profile',
-        risk: 'Medium',
-        verdictStatus: 'Proceed',
-        verdictQuote: '"Promising concept with a clearer path to enterprise commercialization."',
-        whatChanged: [
-          'Clearer monetization strategy defined',
-          'Stronger GTM plan for ER providers',
-          'Better target customer definition',
-        ],
-        positiveChanges: [
-          'Revenue model clarified to B2B SaaS',
-          'Target customer narrowed to emergency care providers',
-          'MVP scope reduced to QR emergency profile',
-          'Emergency use case strengthened',
-        ],
-        negativeChanges: [
-          'Unit economics still need validation',
-        ],
-      },
-      {
-        version: 'V5',
-        isLatest: false,
-        score: 7.8,
-        date: 'Jul 31, 2026',
-        focus: 'Go-to-Market Strategy',
-        targetAudience: 'Healthcare providers & EMTs',
-        revenue: 'Per-device license',
-        mvp: 'Mobile app + QR band',
-        risk: 'Medium-High',
-        verdictStatus: 'Needs Work',
-        verdictQuote: '"Strong traction on usability, but CAC remains high."',
-        whatChanged: [
-          'Identified primary healthcare provider personas',
-          'Formulated enterprise B2B partner distribution',
-        ],
-        positiveChanges: [
-          'B2B partner channel identified',
-          'User personas refined',
-        ],
-        negativeChanges: [
-          'CAC model not yet cost-efficient',
-        ],
-      },
-      {
-        version: 'V4',
-        isLatest: false,
-        score: 7.1,
-        date: 'Jul 30, 2026',
-        focus: 'Product & MVP Validation',
-        targetAudience: 'Hospital emergency departments',
-        revenue: 'Undecided',
-        mvp: 'Mobile app + hardware scanner',
-        risk: 'High',
-        verdictStatus: 'Pivot Required',
-        verdictQuote: '"HIPAA compliance roadmap needs immediate clarification."',
-        whatChanged: [
-          'Simplified QR access workflow to 1-tap',
-          'Defined core security & data encryption requirements',
-        ],
-        positiveChanges: [
-          '1-tap UI simplification',
-          'Security architecture mapped',
-        ],
-        negativeChanges: [
-          'Hardware reliance increases friction',
-        ],
-      },
-      {
-        version: 'V3',
-        isLatest: false,
-        score: 6.8,
-        date: 'Jul 29, 2026',
-        focus: 'Market Research & Problem Validation',
-        targetAudience: 'General consumers',
-        revenue: 'Freemium consumer app',
-        mvp: 'Full health dashboard',
-        risk: 'High',
-        verdictStatus: 'Needs Work',
-        verdictQuote: '"Consumer health app market is oversaturated."',
-        whatChanged: [
-          'Validated high user demand for emergency QR access',
-        ],
-        positiveChanges: [
-          'Emergency access feature validated',
-        ],
-        negativeChanges: [
-          'Consumer subscription model unviable',
-        ],
-      },
-      {
-        version: 'V2',
-        isLatest: false,
-        score: 6.8,
-        date: 'Jul 29, 2026',
-        focus: 'Idea Feasibility',
-        targetAudience: 'General consumers',
-        revenue: 'Ad-supported model',
-        mvp: 'Health portal',
-        risk: 'High',
-        verdictStatus: 'Needs Work',
-        verdictQuote: '"Ad revenue model is weak for healthcare privacy."',
-        whatChanged: [
-          'Confirmed technical feasibility of emergency QR payload',
-        ],
-        positiveChanges: [
-          'Technical feasibility proven',
-        ],
-        negativeChanges: [
-          'Ad revenue model rejected by board',
-        ],
-      },
-      {
-        version: 'V1',
-        isLatest: false,
-        score: 6.3,
-        date: 'Jul 28, 2026',
-        focus: 'Initial Concept Submission',
-        targetAudience: 'Broad consumer healthcare',
-        revenue: 'Unclear',
-        mvp: 'Too broad platform',
-        risk: 'High',
-        verdictStatus: 'Needs Work',
-        verdictQuote: '"Value proposition is unfocused and target demographic is overly broad."',
-        whatChanged: [
-          'Initial concept submission',
-          'Basic market hypothesis',
-        ],
-        positiveChanges: [
-          'Initial concept submitted',
-        ],
-        negativeChanges: [
-          'Unfocused value proposition',
-        ],
-      },
-    ],
-  },
-  MEDORA: {
-    id: 'MEDORA',
-    name: 'MEDORA',
-    category: 'HealthTech',
-    versions: [
-      {
-        version: 'V4',
-        isLatest: true,
-        score: 7.9,
-        date: 'Jul 28, 2026',
-        focus: 'Clinical Integration & Pilots',
-        targetAudience: 'Private clinics & diagnostic labs',
-        revenue: 'Monthly subscription ($499/mo)',
-        mvp: 'Diagnostic AI assistant',
-        risk: 'Medium',
-        verdictStatus: 'Proceed',
-        verdictQuote: '"Strong pilot engagement with diagnostic accuracy > 94%."',
-        whatChanged: [
-          'Diagnostic AI accuracy improved to 94%',
-          'SaaS pricing validated with 5 pilot clinics',
-        ],
-        positiveChanges: [
-          '94% AI accuracy achieved',
-          'Paid pilot traction established',
-        ],
-        negativeChanges: [
-          'Regulatory clearance still pending',
-        ],
-      },
-      {
-        version: 'V3',
-        isLatest: false,
-        score: 7.4,
-        date: 'Jul 25, 2026',
-        focus: 'AI Model Accuracy',
-        targetAudience: 'Diagnostic labs',
-        revenue: 'Per-scan fee',
-        mvp: 'Scan analyzer web app',
-        risk: 'Medium',
-        verdictStatus: 'Needs Work',
-        verdictQuote: '"Per-scan fee model creates unpredictable revenue."',
-        whatChanged: [
-          'Model retrained on 50k annotated medical scans',
-        ],
-        positiveChanges: [
-          'Model training dataset expanded',
-        ],
-        negativeChanges: [
-          'Per-scan pricing rejected',
-        ],
-      },
-      {
-        version: 'V2',
-        isLatest: false,
-        score: 7.0,
-        date: 'Jul 20, 2026',
-        focus: 'Architecture & Security',
-        targetAudience: 'Individual doctors',
-        revenue: 'Freemium',
-        mvp: 'Desktop scan tool',
-        risk: 'High',
-        verdictStatus: 'Needs Work',
-        verdictQuote: '"Individual doctor sales cycle is too slow."',
-        whatChanged: [
-          'Added DICOM imaging format support',
-        ],
-        positiveChanges: [
-          'DICOM format compatibility',
-        ],
-        negativeChanges: [
-          'Single-doctor sales model inefficient',
-        ],
-      },
-      {
-        version: 'V1',
-        isLatest: false,
-        score: 6.5,
-        date: 'Jul 15, 2026',
-        focus: 'Initial Prototype',
-        targetAudience: 'General medical practitioners',
-        revenue: 'Unclear',
-        mvp: 'Basic scan viewer',
-        risk: 'High',
-        verdictStatus: 'Needs Work',
-        verdictQuote: '"Prototype shows promise but lacks enterprise compliance."',
-        whatChanged: [
-          'Initial prototype submission',
-        ],
-        positiveChanges: [
-          'Proof of concept built',
-        ],
-        negativeChanges: [
-          'Lacks HIPAA compliance',
-        ],
-      },
-    ],
-  },
-};
+// Pre-populated initial startup dataset (empty for multi-tenant account isolation)
+const BASE_STARTUPS = {};
 
 // SVG Line/Area Graph for Score Evolution
 function ScoreEvolutionChart({ versions = [] }) {
@@ -695,6 +448,24 @@ export default function EvolutionTimeline({
 
               {/* Startup Library Cards Grid */}
               <div className="evolution-startup-grid">
+                {filteredStartups.length === 0 && (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '48px 24px',
+                    background: 'rgba(15,23,42,0.6)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: '16px',
+                    gridColumn: '1 / -1'
+                  }}>
+                    <h3 style={{ color: '#f8fafc', marginBottom: '8px' }}>No Evolution Records Found</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '20px' }}>
+                      Convene your executive board to analyze your first startup idea and track its version progression.
+                    </p>
+                    <button className="btn-sm btn-primary btn-glow" onClick={() => onNavigate('form')}>
+                      🚀 Convene Board & Start Pitch
+                    </button>
+                  </div>
+                )}
                 {filteredStartups.map((startup) => (
                   <div
                     key={startup.id}
