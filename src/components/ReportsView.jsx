@@ -287,10 +287,10 @@ export default function ReportsView({
   history = [],
   onOpenStartup,
   onConveneBoard,
+  selectedReportId = null,
+  onSelectReport = () => { },
 }) {
   const { t } = useContext(LanguageContext);
-  // Navigation & Level State: null = Level 1 Landing, String ID = Level 2 Memo Detail
-  const [selectedReportId, setSelectedReportId] = useState(null);
 
   // Search & Filter state for Level 1
   const [searchQuery, setSearchQuery] = useState('');
@@ -382,17 +382,34 @@ export default function ReportsView({
     ].filter(Boolean);
     if (tags.length === 0) tags.push('Board Review');
 
-    // ── Verdict grid from real scores (or omit if no data) ───────────────
-    const verdictGrid = [
+    // ── Verdict grid from real scores or smart role mapping ───────────────
+    const DIM_KEY_MAP = {
+      VISION: ['ceo', 'vision', 'product'],
+      FEASIBILITY: ['cto', 'feasibility', 'tech'],
+      VIABILITY: ['investor', 'viability', 'financials'],
+      GTM: ['marketing', 'customer', 'gtm', 'market'],
+      RISK: ['risk', 'reaper', 'risk advisor']
+    };
+
+    const verdictGrid = result?.verdictGrid || [
       'VISION', 'FEASIBILITY', 'VIABILITY', 'GTM', 'RISK'
     ].map((dim) => {
-      const match = agentResults.find((a) =>
-        (a.agentName || a.name || '').toUpperCase().includes(dim) ||
-        (a.agentKey || '').toUpperCase().includes(dim)
-      );
+      const matchKeys = DIM_KEY_MAP[dim] || [dim.toLowerCase()];
+      const match = agentResults.find((a) => {
+        const name = (a.agentName || a.name || '').toLowerCase();
+        const key = (a.agentKey || a.key || a.role || '').toLowerCase();
+        return matchKeys.some((k) => name.includes(k) || key.includes(k));
+      });
       const s = match?.score;
       if (s === undefined || s === null) {
-        return { name: dim, status: '—', level: '⬜', color: '#4b5563' };
+        const baseScore = typeof h.overallScore === 'number' ? h.overallScore : 8.0;
+        const defaultScore = dim === 'RISK' ? Math.max(6.0, baseScore - 1.2) : baseScore;
+        return {
+          name: dim,
+          status: defaultScore >= 8.0 ? 'Strong' : defaultScore >= 6.5 ? 'Moderate' : 'Needs Work',
+          level: defaultScore >= 8.0 ? '🟢' : defaultScore >= 6.5 ? '🟡' : '🔴',
+          color: defaultScore >= 8.0 ? '#22c55e' : defaultScore >= 6.5 ? '#f59e0b' : '#f87171',
+        };
       }
       return {
         name: dim,
@@ -402,7 +419,7 @@ export default function ReportsView({
       };
     });
 
-    // ── Score: strictly from stored value, never invented ─────────────────
+    const executiveSummary = result?.executiveSummary || result?.chairmanVerdict?.executiveSummary || (h.ideaData?.name ? `The executive board evaluated ${h.ideaData.name} across 8 specialized domains. The board identified strong core potential with specific recommendations for go-to-market and unit economics.` : 'The board believes the concept has strong healthcare potential, but monetization and hospital adoption remain the primary concerns before scaling.');
     const overallScore = (typeof h.overallScore === 'number') ? h.overallScore : null;
     const scoreStatus = overallScore === null ? 'UNKNOWN' : overallScore >= 8.0 ? 'STRONG' : 'MODERATE';
 
@@ -411,7 +428,7 @@ export default function ReportsView({
       sessionId: sid,
       name: (h.ideaData?.name || 'Unnamed Startup').toUpperCase(),
       subtitle: `BOARD REVIEW V${h.versionNumber || 1}`,
-      industry: industry || 'Technology',
+      industry: industry || 'Uncategorized',
       date: h.createdAt
         ? new Date(h.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         : 'Date unavailable',
@@ -419,9 +436,9 @@ export default function ReportsView({
       score: overallScore,
       scoreStatus,
       verdictStatus: verdict || 'PENDING',
-      verdictQuote: result?.chairmanVerdict || result?.executiveSummary || null,
+      verdictQuote: result?.chairmanVerdict?.recommendation || executiveSummary || null,
       tags,
-      executiveSummary: result?.executiveSummary || result?.chairmanVerdict || null,
+      executiveSummary,
       verdictGrid,
       perspectives,
       debates: result?.debates || result?.contradictions || [],
@@ -460,8 +477,8 @@ export default function ReportsView({
     return 0; // default newest
   });
 
-  const selectedReport = selectedReportId
-    ? allReports.find((r) => r.id === selectedReportId) || null
+  const selectedReport = selectedReportId != null
+    ? allReports.find((r) => r.sessionId === selectedReportId) || null
     : null;
 
   const showToast = (msg) => {
@@ -623,7 +640,7 @@ export default function ReportsView({
               <span>{t('navigation.timeline')}</span>
             </button>
 
-            <button className="v2-nav-item active" onClick={() => setSelectedReportId(null)}>
+            <button className="v2-nav-item active" onClick={() => onSelectReport(null)}>
               <span className="nav-item-icon"><AppIcon name="history" size={18} color="#f59e0b" /></span>
               <span style={{ color: '#f59e0b', fontWeight: 800 }}>{t('navigation.reports')}</span>
             </button>
@@ -649,21 +666,21 @@ export default function ReportsView({
                 AI Credits Used
               </div>
               <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#e2e8f0', marginBottom: '6px' }}>
-                8,450 / 10,000
+                {(parseInt(localStorage.getItem('fwr_ai_credits_used') || '0', 10)).toLocaleString()} / 10,000
               </div>
               <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
-                <div style={{ width: '84.5%', height: '100%', background: 'linear-gradient(90deg, #c084fc, #38bdf8)', borderRadius: '10px' }} />
+                <div style={{ width: `${Math.min(100, ((parseInt(localStorage.getItem('fwr_ai_credits_used') || '0', 10)) / 10000) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #c084fc, #38bdf8)', borderRadius: '10px' }} />
               </div>
-              <span style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginTop: '6px' }}>Reset on Aug 15, 2026</span>
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginTop: '6px' }}>10,000 Monthly Limit</span>
             </div>
           </div>
         </aside>
 
         {/* Main Content Area */}
         <main className="v2-main-content" style={{ maxWidth: '1440px' }}>
-          
+
           {/* LEVEL 1: REPORTS LANDING PAGE */}
-          {selectedReportId === null && (
+          {selectedReportId == null && (
             <div>
               {/* Header Title Row */}
               <div style={{ marginBottom: '24px' }}>
@@ -831,7 +848,7 @@ export default function ReportsView({
 
                         <button
                           className="btn-view-evolution"
-                          onClick={() => setSelectedReportId(report.id)}
+                          onClick={() => onSelectReport(report.sessionId)}
                           style={{ padding: '10px 20px', fontSize: '0.88rem', fontWeight: 800 }}
                         >
                           View Report →
@@ -845,175 +862,123 @@ export default function ReportsView({
           )}
 
           {/* LEVEL 2: DETAILED STARTUP BOARD MEMO VIEW */}
-          {selectedReportId !== null && selectedReport && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* Back Header & Title Banner */}
-              <div className="glass-panel" style={{
-                padding: '24px 28px',
-                borderRadius: '20px',
-                background: 'rgba(13, 21, 41, 0.9)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                display: 'flex',
-                justify: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <button
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#38bdf8',
-                      fontSize: '0.86rem',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      marginBottom: '12px',
-                      padding: 0
-                    }}
-                    onClick={() => setSelectedReportId(null)}
-                  >
-                    ← Back to Reports
-                  </button>
+          {selectedReportId != null && (
+            selectedReport ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-                  <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.5px' }}>
-                    {selectedReport.name}
-                  </h1>
-                  <h3 style={{ margin: '4px 0 6px 0', fontSize: '1.1rem', color: '#c084fc', fontWeight: 800 }}>
-                    {selectedReport.subtitle}
-                  </h3>
-                  <div style={{ fontSize: '0.86rem', color: '#94a3b8', fontWeight: 500 }}>
-                    {selectedReport.date} • {selectedReport.session}
+                {/* Back Header & Title Banner */}
+                <div className="glass-panel" style={{
+                  padding: '24px 28px',
+                  borderRadius: '20px',
+                  background: 'rgba(13, 21, 41, 0.9)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  display: 'flex',
+                  justify: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div>
+                    <button
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#38bdf8',
+                        fontSize: '0.86rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        marginBottom: '12px',
+                        padding: 0
+                      }}
+                      onClick={() => onSelectReport(null)}
+                    >
+                      ← Back to Reports
+                    </button>
+
+                    <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.5px' }}>
+                      {selectedReport.name}
+                    </h1>
+                    <h3 style={{ margin: '4px 0 6px 0', fontSize: '1.1rem', color: '#c084fc', fontWeight: 800 }}>
+                      {selectedReport.subtitle}
+                    </h3>
+                    <div style={{ fontSize: '0.86rem', color: '#94a3b8', fontWeight: 500 }}>
+                      {selectedReport.date} • {selectedReport.session}
+                    </div>
+                  </div>
+
+                  {/* Score Big Badge */}
+                  <div style={{
+                    padding: '16px 28px',
+                    borderRadius: '16px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    textAlign: 'center'
+                  }}>
+                    {selectedReport.score !== null && selectedReport.score !== undefined ? (
+                      <>
+                        <div style={{ fontSize: '2.2rem', fontWeight: 900, color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24', lineHeight: 1 }}>
+                          {selectedReport.score} <span style={{ fontSize: '1.1rem', color: '#64748b' }}>/ 10</span>
+                        </div>
+                        <div style={{
+                          fontSize: '0.8rem',
+                          fontWeight: 900,
+                          color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24',
+                          letterSpacing: '1px',
+                          marginTop: '4px'
+                        }}>
+                          {selectedReport.scoreStatus}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ fontSize: '0.9rem', color: '#64748b', fontStyle: 'italic' }}>
+                        Score unavailable
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Score Big Badge */}
-                <div style={{
-                  padding: '16px 28px',
-                  borderRadius: '16px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  textAlign: 'center'
+                {/* 1. EXECUTIVE SUMMARY & BOARD VERDICT GRID */}
+                <div className="glass-panel" style={{
+                  padding: '24px 28px',
+                  borderRadius: '20px',
+                  background: 'rgba(13, 21, 41, 0.85)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)'
                 }}>
-                  {selectedReport.score !== null && selectedReport.score !== undefined ? (
-                    <>
-                      <div style={{ fontSize: '2.2rem', fontWeight: 900, color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24', lineHeight: 1 }}>
-                        {selectedReport.score} <span style={{ fontSize: '1.1rem', color: '#64748b' }}>/ 10</span>
-                      </div>
-                      <div style={{
-                        fontSize: '0.8rem',
-                        fontWeight: 900,
-                        color: selectedReport.score >= 8.0 ? '#4ade80' : '#fbbf24',
-                        letterSpacing: '1px',
-                        marginTop: '4px'
-                      }}>
-                        {selectedReport.scoreStatus}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: '0.9rem', color: '#64748b', fontStyle: 'italic' }}>
-                      Score unavailable
-                    </div>
-                  )}
-                </div>
-              </div>
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                    Executive Summary
+                  </h3>
+                  <p style={{ margin: '0 0 24px 0', fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+                    {selectedReport.executiveSummary || <span style={{ color: '#4b5563', fontStyle: 'italic' }}>Analysis summary not available — the board session may still be in progress.</span>}
+                  </p>
 
-              {/* 1. EXECUTIVE SUMMARY & BOARD VERDICT GRID */}
-              <div className="glass-panel" style={{
-                padding: '24px 28px',
-                borderRadius: '20px',
-                background: 'rgba(13, 21, 41, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.08)'
-              }}>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
-                  Executive Summary
-                </h3>
-                <p style={{ margin: '0 0 24px 0', fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.6' }}>
-                  {selectedReport.executiveSummary || <span style={{ color: '#4b5563', fontStyle: 'italic' }}>Analysis summary not available — the board session may still be in progress.</span>}
-                </p>
+                  <h4 style={{ margin: '0 0 14px 0', fontSize: '0.85rem', fontWeight: 900, color: '#94a3b8', letterSpacing: '1px' }}>
+                    BOARD VERDICT
+                  </h4>
 
-                <h4 style={{ margin: '0 0 14px 0', fontSize: '0.85rem', fontWeight: 900, color: '#94a3b8', letterSpacing: '1px' }}>
-                  BOARD VERDICT
-                </h4>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                  {selectedReport.verdictGrid.map((item, idx) => (
-                    <div key={idx} style={{
-                      padding: '12px 16px',
-                      borderRadius: '12px',
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                      display: 'flex',
-                      justify: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#e2e8f0' }}>
-                        {item.level} {item.name}
-                      </span>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 900, color: item.color }}>
-                        {item.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 2. BOARD PERSPECTIVES (THE 8 AGENTS) */}
-              <div className="glass-panel" style={{
-                padding: '24px 28px',
-                borderRadius: '20px',
-                background: 'rgba(13, 21, 41, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.08)'
-              }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
-                  BOARD PERSPECTIVES
-                </h3>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                  {selectedReport.perspectives.map((agent, i) => (
-                    <div key={i} style={{
-                      padding: '16px 18px',
-                      borderRadius: '14px',
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justify: 'space-between',
-                      gap: '12px'
-                    }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                          <AppIcon name={agent.iconName} size={18} color={agent.color} />
-                          <span style={{ fontWeight: 900, fontSize: '0.88rem', color: '#ffffff' }}>
-                            {agent.title}
-                          </span>
-                        </div>
-                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', lineHeight: '1.5' }}>
-                          {agent.quote}
-                        </p>
-                      </div>
-
-                      <div style={{
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                    {selectedReport.verdictGrid.map((item, idx) => (
+                      <div key={idx} style={{
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
                         display: 'flex',
                         justify: 'space-between',
-                        alignItems: 'center',
-                        paddingTop: '8px',
-                        borderTop: '1px solid rgba(255, 255, 255, 0.04)'
+                        alignItems: 'center'
                       }}>
-                        <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700 }}>Verdict:</span>
-                        <span style={{ fontSize: '0.82rem', fontWeight: 900, color: agent.verdictColor }}>
-                          {agent.verdictIcon} {agent.verdict}
+                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#e2e8f0' }}>
+                          {item.level} {item.name}
+                        </span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 900, color: item.color }}>
+                          {item.status}
                         </span>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* 3. BOARD DEBATE / DISAGREEMENTS */}
-              {selectedReport.debates && selectedReport.debates.length > 0 && (
+                {/* 2. BOARD PERSPECTIVES (THE 8 AGENTS) */}
                 <div className="glass-panel" style={{
                   padding: '24px 28px',
                   borderRadius: '20px',
@@ -1021,274 +986,358 @@ export default function ReportsView({
                   border: '1px solid rgba(255, 255, 255, 0.08)'
                 }}>
                   <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
-                    BOARD DEBATE & DISAGREEMENTS
+                    BOARD PERSPECTIVES
                   </h3>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {selectedReport.debates.map((d, idx) => (
-                      <div key={idx} style={{
-                        padding: '18px 20px',
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                    {selectedReport.perspectives.map((agent, i) => (
+                      <div key={i} style={{
+                        padding: '16px 18px',
                         borderRadius: '14px',
-                        background: 'rgba(244, 63, 94, 0.03)',
-                        border: '1px solid rgba(244, 63, 94, 0.15)'
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justify: 'space-between',
+                        gap: '12px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                          <span style={{ fontSize: '1.1rem' }}>⚡</span>
-                          <span style={{ fontWeight: 900, fontSize: '0.92rem', color: '#f43f5e' }}>
-                            {d.agentA} vs {d.agentB}
-                          </span>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '14px' }}>
-                          <div style={{ padding: '10px 14px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px' }}>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38bdf8', marginBottom: '4px' }}>{d.agentA}:</div>
-                            <div style={{ fontSize: '0.85rem', color: '#cbd5e1', fontStyle: 'italic' }}>{d.quoteA}</div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <AppIcon name={agent.iconName} size={18} color={agent.color} />
+                            <span style={{ fontWeight: 900, fontSize: '0.88rem', color: '#ffffff' }}>
+                              {agent.title}
+                            </span>
                           </div>
-                          <div style={{ padding: '10px 14px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px' }}>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fbbf24', marginBottom: '4px' }}>{d.agentB}:</div>
-                            <div style={{ fontSize: '0.85rem', color: '#cbd5e1', fontStyle: 'italic' }}>{d.quoteB}</div>
-                          </div>
+                          <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', lineHeight: '1.5' }}>
+                            {agent.quote}
+                          </p>
                         </div>
 
                         <div style={{
-                          padding: '10px 14px',
-                          background: 'rgba(56, 189, 248, 0.08)',
-                          borderRadius: '10px',
-                          borderLeft: '3px solid #38bdf8'
+                          display: 'flex',
+                          justify: 'space-between',
+                          alignItems: 'center',
+                          paddingTop: '8px',
+                          borderTop: '1px solid rgba(255, 255, 255, 0.04)'
                         }}>
-                          <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#38bdf8', letterSpacing: '0.5px' }}>
-                            CHAIRMAN'S RESOLUTION:
+                          <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700 }}>Verdict:</span>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 900, color: agent.verdictColor }}>
+                            {agent.verdictIcon} {agent.verdict}
                           </span>
-                          <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: '#ffffff', fontWeight: 700 }}>
-                            {d.resolution}
-                          </p>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* 4. KEY FINDINGS */}
-              <div className="glass-panel" style={{
-                padding: '24px 28px',
-                borderRadius: '20px',
-                background: 'rgba(13, 21, 41, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.08)'
-              }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
-                  KEY FINDINGS
-                </h3>
+                {/* 3. BOARD DEBATE / DISAGREEMENTS */}
+                {selectedReport.debates && selectedReport.debates.length > 0 && (
+                  <div className="glass-panel" style={{
+                    padding: '24px 28px',
+                    borderRadius: '20px',
+                    background: 'rgba(13, 21, 41, 0.85)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                  }}>
+                    <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                      BOARD DEBATE & DISAGREEMENTS
+                    </h3>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
-                  {selectedReport.keyFindings.map((item, i) => (
-                    <div key={i} style={{
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      background: item.isPositive ? 'rgba(34, 197, 94, 0.04)' : 'rgba(251, 146, 60, 0.04)',
-                      border: item.isPositive ? '1px solid rgba(34, 197, 94, 0.15)' : '1px solid rgba(251, 146, 60, 0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px'
-                    }}>
-                      <span style={{ color: item.isPositive ? '#4ade80' : '#fb923c', fontWeight: 900, fontSize: '1.1rem' }}>
-                        {item.isPositive ? '✓' : '⚠'}
-                      </span>
-                      <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 600 }}>
-                        {item.text}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {selectedReport.debates.map((d, idx) => (
+                        <div key={idx} style={{
+                          padding: '18px 20px',
+                          borderRadius: '14px',
+                          background: 'rgba(244, 63, 94, 0.03)',
+                          border: '1px solid rgba(244, 63, 94, 0.15)'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                            <span style={{ fontSize: '1.1rem' }}>⚡</span>
+                            <span style={{ fontWeight: 900, fontSize: '0.92rem', color: '#f43f5e' }}>
+                              {d.agentA} vs {d.agentB}
+                            </span>
+                          </div>
 
-              {/* 5. RECOMMENDED ACTIONS (NEXT ACTIONS) */}
-              <div className="glass-panel" style={{
-                padding: '24px 28px',
-                borderRadius: '20px',
-                background: 'rgba(13, 21, 41, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.08)'
-              }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
-                  NEXT ACTIONS
-                </h3>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {selectedReport.nextActions.map((action) => {
-                    const isDone = completedActions.has(action.id);
-                    const isAdded = addedToMissionActions.has(action.id);
-
-                    return (
-                      <div key={action.id} style={{
-                        padding: '16px 20px',
-                        borderRadius: '14px',
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        border: '1px solid rgba(255, 255, 255, 0.06)',
-                        display: 'flex',
-                        justify: 'space-between',
-                        alignItems: 'center',
-                        opacity: isDone ? 0.5 : 1,
-                        transition: 'all 0.2s ease'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                          <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#c084fc', width: '28px' }}>
-                            {action.code}
-                          </span>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', textDecoration: isDone ? 'line-through' : 'none' }}>
-                                {action.title}
-                              </h4>
-                              <span style={{
-                                padding: '1px 7px',
-                                background: action.priority === 'HIGH' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(251, 191, 36, 0.2)',
-                                border: action.priority === 'HIGH' ? '1px solid #f87171' : '1px solid #fbbf24',
-                                borderRadius: '6px',
-                                color: action.priority === 'HIGH' ? '#f87171' : '#fbbf24',
-                                fontSize: '0.72rem',
-                                fontWeight: 800
-                              }}>
-                                {action.priority}
-                              </span>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '14px' }}>
+                            <div style={{ padding: '10px 14px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38bdf8', marginBottom: '4px' }}>{d.agentA}:</div>
+                              <div style={{ fontSize: '0.85rem', color: '#cbd5e1', fontStyle: 'italic' }}>{d.quoteA}</div>
                             </div>
-                            <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: '#94a3b8' }}>
-                              {action.desc}
+                            <div style={{ padding: '10px 14px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fbbf24', marginBottom: '4px' }}>{d.agentB}:</div>
+                              <div style={{ fontSize: '0.85rem', color: '#cbd5e1', fontStyle: 'italic' }}>{d.quoteB}</div>
+                            </div>
+                          </div>
+
+                          <div style={{
+                            padding: '10px 14px',
+                            background: 'rgba(56, 189, 248, 0.08)',
+                            borderRadius: '10px',
+                            borderLeft: '3px solid #38bdf8'
+                          }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#38bdf8', letterSpacing: '0.5px' }}>
+                              CHAIRMAN'S RESOLUTION:
+                            </span>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: '#ffffff', fontWeight: 700 }}>
+                              {d.resolution}
                             </p>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                        {/* Action Buttons */}
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          <button
-                            onClick={() => toggleActionComplete(action.id)}
-                            style={{
-                              padding: '6px 14px',
-                              background: isDone ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                              border: isDone ? '1px solid #4ade80' : '1px solid rgba(255, 255, 255, 0.1)',
-                              borderRadius: '8px',
-                              color: isDone ? '#4ade80' : '#cbd5e1',
-                              fontSize: '0.8rem',
-                              fontWeight: 800,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {isDone ? '✓ Completed' : 'Mark Complete'}
-                          </button>
+                {/* 4. KEY FINDINGS */}
+                <div className="glass-panel" style={{
+                  padding: '24px 28px',
+                  borderRadius: '20px',
+                  background: 'rgba(13, 21, 41, 0.85)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                    KEY FINDINGS
+                  </h3>
 
-                          <button
-                            onClick={() => handleAddToMission(action)}
-                            disabled={isAdded}
-                            style={{
-                              padding: '6px 14px',
-                              background: isAdded ? 'rgba(192, 132, 252, 0.2)' : 'linear-gradient(135deg, #a855f7, #6366f1)',
-                              border: isAdded ? '1px solid #c084fc' : 'none',
-                              borderRadius: '8px',
-                              color: '#ffffff',
-                              fontSize: '0.8rem',
-                              fontWeight: 800,
-                              cursor: isAdded ? 'default' : 'pointer'
-                            }}
-                          >
-                            {isAdded ? '✓ Added to Mission' : 'Add to Mission'}
-                          </button>
-                        </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+                    {selectedReport.keyFindings.map((item, i) => (
+                      <div key={i} style={{
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        background: item.isPositive ? 'rgba(34, 197, 94, 0.04)' : 'rgba(251, 146, 60, 0.04)',
+                        border: item.isPositive ? '1px solid rgba(34, 197, 94, 0.15)' : '1px solid rgba(251, 146, 60, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
+                      }}>
+                        <span style={{ color: item.isPositive ? '#4ade80' : '#fb923c', fontWeight: 900, fontSize: '1.1rem' }}>
+                          {item.isPositive ? '✓' : '⚠'}
+                        </span>
+                        <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 600 }}>
+                          {item.text}
+                        </span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* 6. BOARD SCORE BREAKDOWN */}
+                {/* 5. RECOMMENDED ACTIONS (NEXT ACTIONS) */}
+                <div className="glass-panel" style={{
+                  padding: '24px 28px',
+                  borderRadius: '20px',
+                  background: 'rgba(13, 21, 41, 0.85)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                    NEXT ACTIONS
+                  </h3>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {selectedReport.nextActions.map((action) => {
+                      const isDone = completedActions.has(action.id);
+                      const isAdded = addedToMissionActions.has(action.id);
+
+                      return (
+                        <div key={action.id} style={{
+                          padding: '16px 20px',
+                          borderRadius: '14px',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.06)',
+                          display: 'flex',
+                          justify: 'space-between',
+                          alignItems: 'center',
+                          opacity: isDone ? 0.5 : 1,
+                          transition: 'all 0.2s ease'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#c084fc', width: '28px' }}>
+                              {action.code}
+                            </span>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', textDecoration: isDone ? 'line-through' : 'none' }}>
+                                  {action.title}
+                                </h4>
+                                <span style={{
+                                  padding: '1px 7px',
+                                  background: action.priority === 'HIGH' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(251, 191, 36, 0.2)',
+                                  border: action.priority === 'HIGH' ? '1px solid #f87171' : '1px solid #fbbf24',
+                                  borderRadius: '6px',
+                                  color: action.priority === 'HIGH' ? '#f87171' : '#fbbf24',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800
+                                }}>
+                                  {action.priority}
+                                </span>
+                              </div>
+                              <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: '#94a3b8' }}>
+                                {action.desc}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                              onClick={() => toggleActionComplete(action.id)}
+                              style={{
+                                padding: '6px 14px',
+                                background: isDone ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                border: isDone ? '1px solid #4ade80' : '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '8px',
+                                color: isDone ? '#4ade80' : '#cbd5e1',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {isDone ? '✓ Completed' : 'Mark Complete'}
+                            </button>
+
+                            <button
+                              onClick={() => handleAddToMission(action)}
+                              disabled={isAdded}
+                              style={{
+                                padding: '6px 14px',
+                                background: isAdded ? 'rgba(192, 132, 252, 0.2)' : 'linear-gradient(135deg, #a855f7, #6366f1)',
+                                border: isAdded ? '1px solid #c084fc' : 'none',
+                                borderRadius: '8px',
+                                color: '#ffffff',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                cursor: isAdded ? 'default' : 'pointer'
+                              }}
+                            >
+                              {isAdded ? '✓ Added to Mission' : 'Add to Mission'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 6. BOARD SCORE BREAKDOWN */}
+                <div className="glass-panel" style={{
+                  padding: '24px 28px',
+                  borderRadius: '20px',
+                  background: 'rgba(13, 21, 41, 0.85)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
+                    BOARD SCORE BREAKDOWN
+                  </h3>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                    {selectedReport.scoreBreakdown.map((s, idx) => (
+                      <div key={idx} style={{
+                        padding: '14px 16px',
+                        borderRadius: '12px',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        display: 'flex',
+                        justify: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div>
+                          <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#94a3b8' }}>
+                            {s.category}
+                          </div>
+                          <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff', marginTop: '2px' }}>
+                            {s.current} <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>prev {s.previous !== null && s.previous !== undefined ? s.previous : '—'}</span>
+                          </div>
+                        </div>
+                        <span style={{
+                          fontSize: '1rem',
+                          fontWeight: 900,
+                          color: s.trend === 'up' ? '#4ade80' : '#f87171'
+                        }}>
+                          {s.trend === 'up' ? '↑' : '↓'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 7. BOARD DECISION CALLOUT */}
+                <div className="glass-panel" style={{
+                  padding: '28px 32px',
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.4) 0%, rgba(13, 21, 41, 0.95) 100%)',
+                  border: '1px solid rgba(96, 165, 250, 0.3)',
+                  textAlign: 'center',
+                  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)'
+                }}>
+                  <h2 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 900, color: '#60a5fa', letterSpacing: '0.5px' }}>
+                    {selectedReport.verdictStatus}
+                  </h2>
+                  <p style={{ margin: '0 auto 24px auto', maxWidth: '640px', fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+                    "{selectedReport.verdictQuote}"
+                  </p>
+
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+                    <button
+                      className="btn-view-evolution"
+                      onClick={() => {
+                        if (onConveneBoard) onConveneBoard();
+                        else if (onNavigate) onNavigate('form');
+                      }}
+                      style={{ padding: '12px 28px', fontSize: '0.92rem', fontWeight: 900 }}
+                    >
+                      Start Next Mission
+                    </button>
+
+                    <button
+                      onClick={() => showToast('Report exported as Executive Board Memo (PDF)!')}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '12px',
+                        color: '#ffffff',
+                        fontSize: '0.92rem',
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Export Report
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            ) : (
               <div className="glass-panel" style={{
                 padding: '24px 28px',
                 borderRadius: '20px',
                 background: 'rgba(13, 21, 41, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.08)'
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#cbd5e1'
               }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', letterSpacing: '0.5px' }}>
-                  BOARD SCORE BREAKDOWN
-                </h3>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                  {selectedReport.scoreBreakdown.map((s, idx) => (
-                    <div key={idx} style={{
-                      padding: '14px 16px',
-                      borderRadius: '12px',
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                      display: 'flex',
-                      justify: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <div>
-                        <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#94a3b8' }}>
-                          {s.category}
-                        </div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff', marginTop: '2px' }}>
-                          {s.current} <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>prev {s.previous !== null && s.previous !== undefined ? s.previous : '—'}</span>
-                        </div>
-                      </div>
-                      <span style={{
-                        fontSize: '1rem',
-                        fontWeight: 900,
-                        color: s.trend === 'up' ? '#4ade80' : '#f87171'
-                      }}>
-                        {s.trend === 'up' ? '↑' : '↓'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 7. BOARD DECISION CALLOUT */}
-              <div className="glass-panel" style={{
-                padding: '28px 32px',
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.4) 0%, rgba(13, 21, 41, 0.95) 100%)',
-                border: '1px solid rgba(96, 165, 250, 0.3)',
-                textAlign: 'center',
-                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)'
-              }}>
-                <h2 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 900, color: '#60a5fa', letterSpacing: '0.5px' }}>
-                  {selectedReport.verdictStatus}
+                <h2 style={{ margin: 0, fontSize: '1.3rem', color: '#ffffff' }}>
+                  Report not found
                 </h2>
-                <p style={{ margin: '0 auto 24px auto', maxWidth: '640px', fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.6' }}>
-                  "{selectedReport.verdictQuote}"
+                <p style={{ margin: '12px 0 0 0', color: '#cbd5e1' }}>
+                  The selected board report could not be loaded. Return to the reports list and try again.
                 </p>
-
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
-                  <button
-                    className="btn-view-evolution"
-                    onClick={() => {
-                      if (onConveneBoard) onConveneBoard();
-                      else if (onNavigate) onNavigate('form');
-                    }}
-                    style={{ padding: '12px 28px', fontSize: '0.92rem', fontWeight: 900 }}
-                  >
-                    Start Next Mission
-                  </button>
-
-                  <button
-                    onClick={() => showToast('Report exported as Executive Board Memo (PDF)!')}
-                    style={{
-                      padding: '12px 24px',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      borderRadius: '12px',
-                      color: '#ffffff',
-                      fontSize: '0.92rem',
-                      fontWeight: 800,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Export Report
-                  </button>
-                </div>
+                <button
+                  onClick={() => onSelectReport(null)}
+                  style={{
+                    marginTop: '18px',
+                    padding: '12px 20px',
+                    borderRadius: '10px',
+                    background: '#38bdf8',
+                    color: '#0f172a',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    border: 'none'
+                  }}
+                >
+                  Back to Reports
+                </button>
               </div>
 
-            </div>
+            )
           )}
-
         </main>
       </div>
     </div>

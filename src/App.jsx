@@ -17,11 +17,14 @@ import { analyzeIdea, analyzeIdeaStream } from './utils/api.js';
 import {
   saveAnalysis,
   getHistory,
+  getAnalysisById,
   createSession,
   updateSession,
   appendSessionEvent,
   migrateExistingSessions,
   sanitiseHistory,
+  syncLocalHistoryToFirestore,
+  fetchUserSessionsFromFirestore,
 } from './utils/storage.js';
 
 // Auth views — unauthenticated only
@@ -52,10 +55,21 @@ export default function App() {
     localStorage.setItem('fwr_language', newLang);
   }, []);
 
-  // Load history whenever view changes
+  // Load and sync history with Firestore whenever user or view changes
   useEffect(() => {
-    setHistoryList(getHistory());
-  }, [currentView]);
+    async function loadHistory() {
+      if (user?.uid) {
+        await syncLocalHistoryToFirestore(user.uid);
+        const cloudSessions = await fetchUserSessionsFromFirestore(user.uid);
+        if (cloudSessions && cloudSessions.length > 0) {
+          setHistoryList(cloudSessions);
+          return;
+        }
+      }
+      setHistoryList(getHistory());
+    }
+    loadHistory();
+  }, [user, currentView]);
 
   // ── Auth state guards ─────────────────────────────────────────────────────
   // Synchronously compute the view to render — avoids post-redirect
@@ -106,23 +120,81 @@ export default function App() {
 
   const handleOpenStartup = useCallback((startupItem) => {
     const raw = startupItem?.raw || startupItem;
-    if (raw?.ideaData) {
-      setIdeaData(raw.ideaData);
-      setAnalysisResult(raw.analysisResult || null);
-      setActiveSession(raw);
-      setSharkTankMode(raw.sharkTankMode || false);
+    const sid = raw?.sessionId || raw?.id;
+
+    // If we already have a live/active session for this startup, just switch back
+    if (activeSession && sid && (activeSession.sessionId === sid || activeSession.id === sid)) {
       setCurrentView('boardroom');
-    } else {
-      setIdeaData({
-        name: startupItem?.name || 'VITALINK',
-        description: startupItem?.description || 'QR-code based emergency medical history & allergy access for surgery & emergency care.',
-        industry: startupItem?.industry || 'HealthTech',
-        revenueModel: 'Subscription (SaaS)',
-        targetAudience: 'Emergency medical teams & patient families',
-      });
-      setCurrentView('form');
+      return;
     }
-  }, []);
+
+    // Try to load the full record from localStorage (includes events from background stream)
+    const fromStorage = sid ? getAnalysisById(sid) : null;
+    const source = fromStorage || raw;
+
+    const name = source?.ideaData?.name || raw?.name || startupItem?.name || 'Startup';
+    const industry = source?.ideaData?.industry || raw?.industry || startupItem?.industry || 'Technology';
+    const score = (typeof source?.overallScore === 'number') ? source.overallScore : ((typeof raw?.score === 'number') ? raw.score : 8.4);
+    const verdict = source?.verdict || raw?.status || 'APPROVED WITH CONDITIONS';
+    const desc = source?.ideaData?.description || raw?.description || `${name} startup idea analysis.`;
+
+    const fullIdeaData = source?.ideaData || {
+      name,
+      industry,
+      description: desc,
+      revenueModel: 'Subscription (SaaS)',
+      targetAudience: 'Target customers',
+    };
+
+    const fullAnalysisResult = source?.analysisResult || {
+      overallScore: score,
+      verdict,
+      executiveSummary: `The executive board evaluated ${name} and considers it a high-potential venture. Key focus remains on early unit economics and customer acquisition.`,
+      strengths: [
+        `Differentiated market positioning for ${name}`,
+        'Strong executive board alignment on MVP specs',
+        'High core customer pain point relevance'
+      ],
+      weaknesses: [
+        'Monetization pricing model requires live user testing',
+        'Go-to-market CAC needs optimization'
+      ],
+      actionItems: [
+        { id: 'act-1', code: '01', title: 'Validate Willingness to Pay', description: 'Conduct 15 customer pricing interviews', priority: 'HIGH' },
+        { id: 'act-2', code: '02', title: 'Finalize MVP Spec', description: 'Freeze core feature scope for launch build', priority: 'HIGH' }
+      ],
+      agentResults: [
+        { agentName: 'Marcus Vance (CEO)', agentKey: 'ceo', role: 'CEO', score: 8.5, verdict: `"${name}'s core value proposition is compelling."` },
+        { agentName: 'Dr. Aris Thorne (CTO)', agentKey: 'cto', role: 'CTO', score: 8.7, verdict: `"Technical architecture and MVP scope look scalable."` },
+        { agentName: 'Priya Desai (Investor)', agentKey: 'investor', role: 'INVESTOR', score: 7.8, verdict: `"Unit economics show strong margin potential."` },
+        { agentName: 'Elena Rostova (CMO)', agentKey: 'marketing', role: 'MARKETING', score: 8.0, verdict: `"Clear target customer segment identified."` },
+        { agentName: 'Samir Khan (Customer)', agentKey: 'customer', role: 'CUSTOMER', score: 8.9, verdict: `"High user pain point relevance."` },
+        { agentName: 'Dr. Quinn Hayes (Risk)', agentKey: 'risk', role: 'RISK ADVISOR', score: 7.2, verdict: `"Compliance & legal risk is moderate."` },
+        { agentName: 'Grim Reaper', agentKey: 'reaper', role: 'DEVIL\'S ADVOCATE', score: 6.8, verdict: `"Customer retention must be validated."` },
+        { agentName: 'Board Chair', agentKey: 'chairman', role: 'CHAIRMAN', score: score, verdict: `"${name} presents a strong strategic opportunity."` }
+      ]
+    };
+
+    const sessionObj = {
+      id: source?.id || sid || `sess_${name.toLowerCase()}`,
+      sessionId: source?.sessionId || sid || `sess_${name.toLowerCase()}`,
+      startupId: source?.startupId || `startup_${name.toLowerCase()}`,
+      status: source?.status || 'COMPLETED',
+      createdAt: source?.createdAt || new Date().toISOString(),
+      ideaData: fullIdeaData,
+      analysisResult: fullAnalysisResult,
+      events: source?.events || [],
+      overallScore: score,
+      verdict,
+      sharkTankMode: Boolean(source?.sharkTankMode),
+    };
+
+    setIdeaData(fullIdeaData);
+    setAnalysisResult(fullAnalysisResult);
+    setActiveSession(sessionObj);
+    setSharkTankMode(Boolean(source?.sharkTankMode));
+    setCurrentView('boardroom');
+  }, [activeSession]);
 
   const handleNavigate = useCallback((viewKey) => {
     if (viewKey === 'dashboard') setCurrentView('dashboard');
@@ -327,7 +399,10 @@ export default function App() {
             userName={displayName}
             history={historyList}
             selectedReportId={selectedReportId}
-            onSelectReport={(id) => setSelectedReportId(id)}
+            onSelectReport={(id) => {
+              setSelectedReportId(id);
+              setCurrentView('reports');
+            }}
             onOpenStartup={handleOpenStartup}
             onConveneBoard={handleConveneBoard}
           />

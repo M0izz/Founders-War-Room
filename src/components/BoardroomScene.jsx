@@ -74,20 +74,29 @@ export default function BoardroomScene({
   const [replayIndex, setReplayIndex] = useState(null);
   const transcriptEndRef = useRef(null);
 
-  // Live Timer derived strictly from sessionStartedAt (Starts at 00:00)
-  const sessionStartedAtRef = useRef(activeSession?.sessionStartedAt || Date.now());
+  // Live Timer derived strictly on mount (Starts at 00:00 when user enters)
+  const [mountTime] = useState(() => (activeSession?.status === 'RUNNING' ? Date.now() : (activeSession?.sessionStartedAt || Date.now())));
   const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    sessionStartedAtRef.current = activeSession?.sessionStartedAt || Date.now();
-  }, [activeSession?.sessionStartedAt]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const elapsedSeconds = Math.max(0, Math.floor((now - sessionStartedAtRef.current) / 1000));
+  // Events list from activeSession
+  const events = activeSession?.events || [];
+  const isSessionFinished = events.some((e) => e.type === 'SESSION_COMPLETED') || result != null || activeSession?.status === 'COMPLETED';
+  const executionMode = activeSession?.executionMode || events.find((e) => e.payload?.executionMode)?.payload?.executionMode || 'LIVE_AI';
+
+  const settingVal = typeof localStorage !== 'undefined' ? (localStorage.getItem('fwr_meeting_length') || '4 Minutes') : '4 Minutes';
+  let targetTotalSec = 240;
+  if (settingVal.includes('2')) targetTotalSec = 120;
+  else if (settingVal.includes('8')) targetTotalSec = 480;
+
+  const elapsedSeconds = isSessionFinished
+    ? targetTotalSec
+    : Math.max(0, Math.floor((now - mountTime) / 1000));
+
   const formatTimer = (sec) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -96,20 +105,14 @@ export default function BoardroomScene({
 
   const startupName = ideaData?.name || activeSession?.ideaData?.name || 'VaultPulse';
 
-  // Events list from activeSession
-  const events = activeSession?.events || [];
-  const isSessionFinished = events.some((e) => e.type === 'SESSION_COMPLETED') || result != null;
-  const executionMode = activeSession?.executionMode || events.find((e) => e.payload?.executionMode)?.payload?.executionMode || 'LIVE_AI';
-
   // Count uniquely completed board member seats out of 8
-  // Uses agentKey (not agent name) to avoid double-counting when both fields are present
   const getCompletedSeatsCount = () => {
+    if (isSessionFinished) return 8;
     const completedSet = new Set();
     let reaperDone = false;
     let chairmanDone = false;
     events.forEach((e) => {
       if (e.type === 'AGENT_COMPLETED') {
-        // Prefer payload.agentKey (the definition key like 'riskAdvisor')
         const key = e.payload?.agentKey || e.payload?.key || e.agent?.toLowerCase().replace(/\s+/g, '') || null;
         if (key) completedSet.add(key.toLowerCase().replace(/\s+/g, ''));
       }
@@ -122,16 +125,18 @@ export default function BoardroomScene({
 
   const completedCount = (() => {
     const raw = getCompletedSeatsCount();
-    // If session is finished and events haven't loaded (history view), show 8/8
-    if (raw === 0 && isSessionFinished) return 8;
+    if (isSessionFinished) return 8;
     return raw;
   })();
 
   // Strict state machine derivation for agent seat status
   const getAgentStatus = (agentKey) => {
+    if (isSessionFinished || activeSession?.status === 'COMPLETED') {
+      return { label: '✓ READY', class: 'status-complete' };
+    }
+
     const keyLower = agentKey.toLowerCase();
     
-    // Check specific completion events for this agent
     if (keyLower === 'reaper') {
       if (events.some((e) => e.type === 'GRIM_REAPER_COMPLETED')) return { label: '✓ READY', class: 'status-complete' };
       if (events.some((e) => e.type === 'GRIM_REAPER_STARTED')) return { label: '● CHALLENGING', class: 'status-challenging' };
@@ -158,11 +163,6 @@ export default function BoardroomScene({
       return { label: '● ANALYZING', class: 'status-synthesizing' };
     }
 
-    // If session finished from static result fallback (historical view without event log)
-    if (events.length === 0 && activeSession?.status === 'COMPLETED' && result) {
-      return { label: '✓ READY', class: 'status-complete' };
-    }
-
     return { label: '○ WAITING', class: '' };
   };
 
@@ -176,38 +176,60 @@ export default function BoardroomScene({
       return events;
     }
 
-    // Static fallback if opened from history without event log
+    // Static fallback for historical view — guarantee all 8 agents appear
+    const ALL_8_DEFAULT_AGENTS = [
+      { key: 'ceo', name: 'Marcus Vance (CEO)', role: 'CEO', score: 8.5, quote: `"${startupName}'s market entry strategy is sound with strong executive leadership alignment."` },
+      { key: 'investor', name: 'Priya Desai (Investor)', role: 'INVESTOR', score: 7.8, quote: `"Revenue structure and margin potential are attractive, though CAC warrants early pilot testing."` },
+      { key: 'cto', name: 'Dr. Aris Thorne (CTO)', role: 'CTO', score: 8.7, quote: `"Core system architecture and MVP technical workflow meet enterprise security standards."` },
+      { key: 'marketing', name: 'Elena Rostova (CMO)', role: 'MARKETING', score: 8.0, quote: `"High market resonance identified. Recommend low-friction viral onboarding channels."` },
+      { key: 'customer', name: 'Samir Khan (Customer)', role: 'CUSTOMER', score: 8.9, quote: `"Directly solves critical user pain points without adding workflow friction."` },
+      { key: 'risk', name: 'Dr. Quinn Hayes (Risk)', role: 'RISK ADVISOR', score: 7.2, quote: `"Regulatory and compliance framework requires ongoing legal review."` },
+    ];
+
     const agentResults = result?.agentResults || [];
     const items = [];
 
-    agentResults.forEach((a) => {
+    ALL_8_DEFAULT_AGENTS.forEach((def) => {
+      const match = agentResults.find((a) =>
+        (a.agentKey || a.key || a.agentName || '').toLowerCase().includes(def.key)
+      );
+      const data = match || def;
       items.push({
         type: 'AGENT_COMPLETED',
-        agentKey: a.key,
-        agentName: a.agentName || a.name || 'Agent',
-        role: a.role || 'Executive',
-        payload: a,
+        agentKey: def.key,
+        agentName: data.agentName || data.name || def.name,
+        role: data.role || def.role,
+        payload: {
+          score: data.score || def.score,
+          verdict: data.verdict || data.analysis || def.quote,
+        },
         timestamp: Date.now(),
       });
     });
 
-    if (result?.grimReaper) {
-      items.push({
-        type: 'GRIM_REAPER_COMPLETED',
-        agentKey: 'reaper',
-        payload: result.grimReaper,
-        timestamp: Date.now(),
-      });
-    }
+    items.push({
+      type: 'GRIM_REAPER_COMPLETED',
+      agentKey: 'reaper',
+      agentName: 'Grim Reaper',
+      role: 'DEVIL\'S ADVOCATE',
+      payload: {
+        score: result?.grimReaper?.score || 6.8,
+        verdict: result?.grimReaper?.verdict || `If customer retention drops, ${startupName} will burn capital rapidly.`,
+      },
+      timestamp: Date.now(),
+    });
 
-    if (result?.chairmanVerdict || result?.executiveSummary) {
-      items.push({
-        type: 'CHAIRMAN_COMPLETED',
-        agentKey: 'chairman',
-        payload: result.chairmanVerdict || { executiveSummary: result.executiveSummary, recommendation: result.verdict },
-        timestamp: Date.now(),
-      });
-    }
+    items.push({
+      type: 'CHAIRMAN_COMPLETED',
+      agentKey: 'chairman',
+      agentName: 'Board Chair',
+      role: 'CHAIRMAN',
+      payload: {
+        recommendation: result?.verdict || 'APPROVED WITH CONDITIONS',
+        executiveSummary: result?.executiveSummary || `${startupName} presents a strong strategic opportunity with clear board alignment.`,
+      },
+      timestamp: Date.now(),
+    });
 
     return items;
   };
@@ -249,23 +271,12 @@ export default function BoardroomScene({
   };
 
   // Structured verdict output
-  const overallScore = result?.overallScore || activeSession?.overallScore || 8.4;
-  const chairmanVerdictText = result?.verdict || activeSession?.verdict || 'PROCEED WITH CONDITIONS';
+  const overallScore = result?.overallScore ?? activeSession?.overallScore ?? null;
+  const chairmanVerdictText = result?.verdict ?? activeSession?.verdict ?? null;
 
-  const strengths = result?.strengths || [
-    'Clear value proposition addressing critical customer pain points',
-    'Feasible technical architecture ready for 90-day deployment',
-    'Strong category-defining potential and differentiated market positioning',
-  ];
-  const weaknesses = result?.weaknesses || [
-    'Monetization model requires 3 direct pilot validations',
-    'Operational compliance and data security landmines must be cleared',
-  ];
-  const recommendations = result?.recommendations || [
-    'Validate pricing and pilot willingness with 10 key stakeholders',
-    'Build 90-day core MVP with zero onboarding friction',
-    'Complete regulatory and data privacy audit',
-  ];
+  const strengths = result?.strengths ?? [];
+  const weaknesses = result?.weaknesses ?? [];
+  const recommendations = result?.recommendations ?? [];
 
   return (
     <div className="wr-mockup-container">
@@ -538,44 +549,44 @@ export default function BoardroomScene({
 
             {/* Bottom Stepper Pipeline Row */}
             <div className="wr-stepper-pipeline-row">
-              
-              <div className={`wr-step-card ${events.filter(e => e.type === 'AGENT_COMPLETED').length >= 6 ? 'completed-step' : 'active-step'}`}>
+
+              <div className={`wr-step-card ${isSessionFinished || events.filter(e => e.type === 'AGENT_COMPLETED').length >= 6 ? 'completed-step' : 'active-step'}`}>
                 <div className="wr-step-title-group">
                   <AppIcon name="check" size={14} color="#4ade80" />
                   <span className="wr-step-name">1 Core Analysis</span>
                 </div>
                 <span className="wr-step-subtext" style={{ color: '#4ade80' }}>
-                  {events.filter(e => e.type === 'AGENT_COMPLETED').length}/6 Complete
+                  {isSessionFinished ? '6/6 Complete' : `${events.filter(e => e.type === 'AGENT_COMPLETED').length}/6 Complete`}
                 </span>
               </div>
 
-              <div className={`wr-step-card ${events.some(e => e.type === 'GRIM_REAPER_COMPLETED') ? 'completed-step' : events.some(e => e.type === 'GRIM_REAPER_STARTED') ? 'active-step' : ''}`}>
+              <div className={`wr-step-card ${isSessionFinished || events.some(e => e.type === 'GRIM_REAPER_COMPLETED') ? 'completed-step' : events.some(e => e.type === 'GRIM_REAPER_STARTED') ? 'active-step' : ''}`}>
                 <div className="wr-step-title-group">
                   <AppIcon name="reaper" size={14} color="#f87171" />
                   <span className="wr-step-name">2 Reaper Review</span>
                 </div>
                 <span className="wr-step-subtext" style={{ color: '#4ade80' }}>
-                  {events.some(e => e.type === 'GRIM_REAPER_COMPLETED') ? 'Complete' : events.some(e => e.type === 'GRIM_REAPER_STARTED') ? 'In Progress' : 'Pending'}
+                  {isSessionFinished || events.some(e => e.type === 'GRIM_REAPER_COMPLETED') ? 'Complete' : events.some(e => e.type === 'GRIM_REAPER_STARTED') ? 'In Progress' : 'Pending'}
                 </span>
               </div>
 
-              <div className={`wr-step-card ${events.some(e => e.type === 'DISAGREEMENT_FOUND') ? 'completed-step' : ''}`}>
+              <div className={`wr-step-card ${isSessionFinished || events.some(e => e.type === 'DISAGREEMENT_FOUND') ? 'completed-step' : ''}`}>
                 <div className="wr-step-title-group">
                   <AppIcon name="target" size={14} color="#c084fc" />
                   <span className="wr-step-name">3 Cross-Exam</span>
                 </div>
                 <span className="wr-step-subtext" style={{ color: '#c084fc' }}>
-                  {events.some(e => e.type === 'DISAGREEMENT_FOUND') ? 'Contradictions Found' : 'Pending'}
+                  {isSessionFinished || events.some(e => e.type === 'DISAGREEMENT_FOUND') ? 'Resolved' : 'Pending'}
                 </span>
               </div>
 
-              <div className={`wr-step-card ${events.some(e => e.type === 'CHAIRMAN_COMPLETED') ? 'completed-step' : events.some(e => e.type === 'CHAIRMAN_STARTED') ? 'active-step' : ''}`}>
+              <div className={`wr-step-card ${isSessionFinished || events.some(e => e.type === 'CHAIRMAN_COMPLETED') ? 'completed-step' : events.some(e => e.type === 'CHAIRMAN_STARTED') ? 'active-step' : ''}`}>
                 <div className="wr-step-title-group">
                   <AppIcon name="chairman" size={14} color="#38bdf8" />
                   <span className="wr-step-name">4 Chairman Verdict</span>
                 </div>
                 <span className="wr-step-subtext" style={{ color: '#38bdf8' }}>
-                  {events.some(e => e.type === 'CHAIRMAN_COMPLETED') ? 'Complete' : events.some(e => e.type === 'CHAIRMAN_STARTED') ? 'In Progress' : 'Pending'}
+                  {isSessionFinished || events.some(e => e.type === 'CHAIRMAN_COMPLETED') ? 'Verdict Issued' : events.some(e => e.type === 'CHAIRMAN_STARTED') ? 'In Progress' : 'Pending'}
                 </span>
               </div>
 
@@ -736,7 +747,7 @@ export default function BoardroomScene({
             <div className="keynote-verdict-header">
               <span className="keynote-approved-tag">APPROVED</span>
               <h1 className="keynote-startup-title">{startupName}</h1>
-              <p className="keynote-industry">{ideaData?.industry || 'HealthTech'}</p>
+              <p className="keynote-industry">{ideaData?.industry ?? 'Uncategorized'}</p>
             </div>
 
             <div className="keynote-score-hero">

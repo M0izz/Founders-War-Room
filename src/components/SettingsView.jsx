@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { LanguageContext } from '../contexts/LanguageContext.jsx';
 import AppIcon from './AppIcon.jsx';
+import { getHistory } from '../utils/storage.js';
 
 const TRANSLATIONS = {
   English: {
@@ -292,7 +293,8 @@ export default function SettingsView({
       setLanguage(activeLang);
     }
   }, [contextLanguage, propLanguage]);
-  const [meetingLength, setMeetingLength] = useState('4 Minutes');
+
+  const [meetingLength, setMeetingLength] = useState(() => localStorage.getItem('fwr_meeting_length') || '4 Minutes');
   const [responseDepth, setResponseDepth] = useState('Detailed');
   const [exportQuality, setExportQuality] = useState('High (PDF)');
 
@@ -318,6 +320,17 @@ export default function SettingsView({
   const [debateIntensity, setDebateIntensity] = useState('Aggressive');
   const [interruptionRate, setInterruptionRate] = useState('Medium');
   const [factCheckStrictness, setFactCheckStrictness] = useState('High');
+
+  // Dynamic Plan & Usage metrics
+  const [historyData, setHistoryData] = useState(() => getHistory());
+  useEffect(() => {
+    setHistoryData(getHistory());
+  }, []);
+
+  const aiCreditsUsed = parseInt(localStorage.getItem('fwr_ai_credits_used') || '0', 10);
+  const meetingsCount = historyData.length;
+  const reportsCount = historyData.filter((h) => h.status === 'COMPLETED' || h.analysisResult).length;
+  const storageUsed = ((historyData.length * 0.45) + 0.1).toFixed(1);
 
   // Appearance state
   const [themeMode, setThemeMode] = useState('Cyberpunk Dark');
@@ -523,12 +536,12 @@ export default function SettingsView({
                 AI Credits Used
               </div>
               <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#e2e8f0', marginBottom: '6px' }}>
-                8,450 / 10,000
+                {(parseInt(localStorage.getItem('fwr_ai_credits_used') || '0', 10)).toLocaleString()} / 10,000
               </div>
               <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
-                <div style={{ width: '84.5%', height: '100%', background: 'linear-gradient(90deg, #c084fc, #38bdf8)', borderRadius: '10px' }} />
+                <div style={{ width: `${Math.min(100, ((parseInt(localStorage.getItem('fwr_ai_credits_used') || '0', 10)) / 10000) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #c084fc, #38bdf8)', borderRadius: '10px' }} />
               </div>
-              <span style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginTop: '6px' }}>Reset on Aug 15, 2026</span>
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginTop: '6px' }}>10,000 Monthly Limit</span>
             </div>
           </div>
         </aside>
@@ -719,7 +732,11 @@ export default function SettingsView({
                         <span className="setting-label">{t('meetingLength')}</span>
                         <span className="setting-desc">{t('meetingLengthDesc')}</span>
                       </div>
-                      <select className="settings-select" value={meetingLength} onChange={(e) => setMeetingLength(e.target.value)}>
+                      <select className="settings-select" value={meetingLength} onChange={(e) => {
+                        const val = e.target.value;
+                        setMeetingLength(val);
+                        localStorage.setItem('fwr_meeting_length', val);
+                      }}>
                         <option value="2 Minutes">2 Minutes</option>
                         <option value="4 Minutes">4 Minutes</option>
                         <option value="8 Minutes">8 Minutes</option>
@@ -854,47 +871,75 @@ export default function SettingsView({
                 </div>
               )}
 
-              {/* Card 5 (Row 2): Theme & Visuals */}
-              {matchesSearch('Theme & Visuals', ['theme', 'appearance', 'visuals', 'dark', 'cyberpunk', 'midnight', 'obsidian', 'color', 'accent', 'gold', 'purple', 'font', 'scale']) && (
-                <div className="settings-card glass-panel">
-                  <div className="settings-card-header">
-                    <AppIcon name="activity" size={18} color="#c084fc" />
-                    <h3>{t('themeVisuals')}</h3>
+              {/* Card 5 (Row 2): Free Plan & Resource Usage (Replaces Theme & Visuals) */}
+              {matchesSearch('Free Plan', ['free', 'plan', 'credits', 'storage', 'meetings', 'reports', 'usage', 'limits']) && (
+                <div className="settings-card glass-panel" style={{ padding: '24px', borderRadius: '20px', background: 'rgba(13, 21, 41, 0.95)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <AppIcon name="crown" size={20} color="#c084fc" />
+                      <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, background: 'linear-gradient(90deg, #c084fc, #e879f9)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        Free Plan
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => alert('Plan Management: You are currently on the Free Plan. Upgrade to Pro for unlimited AI credits, board meetings, and export features!')}
+                      style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '0.88rem', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      Manage Plan
+                    </button>
                   </div>
-                  <div className="settings-form-list">
-                    <div className="setting-row">
-                      <div className="setting-info">
-                        <span className="setting-label">{t('interfaceTheme')}</span>
-                        <span className="setting-desc">Choose your theme</span>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                    {/* 1. AI Credits */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.88rem' }}>
+                        <span style={{ color: '#94a3b8', fontWeight: 600 }}>AI Credits</span>
+                        <span style={{ color: '#ffffff', fontWeight: 900 }}>
+                          {aiCreditsUsed.toLocaleString()} <span style={{ color: '#64748b', fontWeight: 600 }}>/ 10,000</span>
+                        </span>
                       </div>
-                      <select className="settings-select" value={themeMode} onChange={(e) => setThemeMode(e.target.value)}>
-                        <option value="Cyberpunk Dark">Cyberpunk Dark</option>
-                        <option value="Midnight Blue">Midnight Blue</option>
-                        <option value="Obsidian Black">Obsidian Stealth</option>
-                      </select>
+                      <div style={{ height: '7px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, (aiCreditsUsed / 10000) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #c084fc, #a855f7)', borderRadius: '10px' }} />
+                      </div>
                     </div>
-                    <div className="setting-row">
-                      <div className="setting-info">
-                        <span className="setting-label">{t('accentColor')}</span>
-                        <span className="setting-desc">Highlight elements</span>
+
+                    {/* 2. Board Meetings */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.88rem' }}>
+                        <span style={{ color: '#94a3b8', fontWeight: 600 }}>Board Meetings</span>
+                        <span style={{ color: '#ffffff', fontWeight: 900 }}>
+                          {meetingsCount} <span style={{ color: '#64748b', fontWeight: 600 }}>/ 50</span>
+                        </span>
                       </div>
-                      <select className="settings-select" value={accentColor} onChange={(e) => setAccentColor(e.target.value)}>
-                        <option value="Gold">Gold Amber</option>
-                        <option value="Purple">Neon Purple</option>
-                        <option value="Cyan">Electric Cyan</option>
-                        <option value="Emerald">Emerald Green</option>
-                      </select>
+                      <div style={{ height: '7px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, (meetingsCount / 50) * 100)}%`, height: '100%', background: '#3b82f6', borderRadius: '10px' }} />
+                      </div>
                     </div>
-                    <div className="setting-row">
-                      <div className="setting-info">
-                        <span className="setting-label">{t('fontScale')}</span>
-                        <span className="setting-desc">UI text sizing</span>
+
+                    {/* 3. Storage */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.88rem' }}>
+                        <span style={{ color: '#94a3b8', fontWeight: 600 }}>Storage</span>
+                        <span style={{ color: '#ffffff', fontWeight: 900 }}>
+                          {storageUsed} GB <span style={{ color: '#64748b', fontWeight: 600 }}>/ 50 GB</span>
+                        </span>
                       </div>
-                      <select className="settings-select" value={fontScale} onChange={(e) => setFontScale(e.target.value)}>
-                        <option value="Compact">Compact</option>
-                        <option value="Standard">Standard</option>
-                        <option value="Large">Large</option>
-                      </select>
+                      <div style={{ height: '7px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, (parseFloat(storageUsed) / 50) * 100)}%`, height: '100%', background: '#4ade80', borderRadius: '10px' }} />
+                      </div>
+                    </div>
+
+                    {/* 4. Reports Generated */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.88rem' }}>
+                        <span style={{ color: '#94a3b8', fontWeight: 600 }}>Reports Generated</span>
+                        <span style={{ color: '#ffffff', fontWeight: 900 }}>
+                          {reportsCount} <span style={{ color: '#64748b', fontWeight: 600 }}>/ 100</span>
+                        </span>
+                      </div>
+                      <div style={{ height: '7px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, (reportsCount / 100) * 100)}%`, height: '100%', background: '#fbbf24', borderRadius: '10px' }} />
+                      </div>
                     </div>
                   </div>
                 </div>

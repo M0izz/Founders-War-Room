@@ -250,82 +250,6 @@ const BASE_STARTUPS = {
       },
     ],
   },
-  EVFLOW: {
-    id: 'EVFLOW',
-    name: 'EVFLOW',
-    category: 'Mobility / EV',
-    versions: [
-      {
-        version: 'V3',
-        isLatest: true,
-        score: 8.7,
-        date: 'Jul 20, 2026',
-        focus: 'Grid Integration & Fleet Partnerships',
-        targetAudience: 'Commercial EV fleet operators',
-        revenue: 'Software license + peak savings share',
-        mvp: 'Smart charging orchestration API',
-        risk: 'Low-Medium',
-        verdictStatus: 'Proceed',
-        verdictQuote: '"Exceptional unit economics and clear utility partner commitments."',
-        whatChanged: [
-          'Grid peak-shaving algorithm patent filed',
-          'Secured pilot with 2 commercial logistics fleets',
-        ],
-        positiveChanges: [
-          'Fleet pilots secured',
-          'Patent filed for grid balancing algorithm',
-          'Shared-savings revenue model adopted',
-        ],
-        negativeChanges: [
-          'Hardware firmware integration dependency',
-        ],
-      },
-      {
-        version: 'V2',
-        isLatest: false,
-        score: 7.5,
-        date: 'Jul 10, 2026',
-        focus: 'Charging Station Hardware Protocol',
-        targetAudience: 'Residential EV owners',
-        revenue: 'Consumer app subscription',
-        mvp: 'Consumer charger app',
-        risk: 'Medium',
-        verdictStatus: 'Needs Work',
-        verdictQuote: '"B2C EV charging apps face high churn."',
-        whatChanged: [
-          'OCPP 2.0 protocol support implemented',
-        ],
-        positiveChanges: [
-          'OCPP 2.0 protocol integration',
-        ],
-        negativeChanges: [
-          'Pivoted away from B2C to commercial fleets',
-        ],
-      },
-      {
-        version: 'V1',
-        isLatest: false,
-        score: 6.8,
-        date: 'Jun 30, 2026',
-        focus: 'Initial Concept',
-        targetAudience: 'EV owners',
-        revenue: 'Ad revenue',
-        mvp: 'Station locator map',
-        risk: 'High',
-        verdictStatus: 'Needs Work',
-        verdictQuote: '"Station map is a commodity feature."',
-        whatChanged: [
-          'Initial EV charging concept',
-        ],
-        positiveChanges: [
-          'EV market opportunity identified',
-        ],
-        negativeChanges: [
-          'Commodity feature set',
-        ],
-      },
-    ],
-  },
 };
 
 // SVG Line/Area Graph for Score Evolution
@@ -453,25 +377,39 @@ export default function EvolutionTimeline({
           'Execution risks monitored by board'
         ];
 
-        dict[startupName].versions.unshift({
-          version: verTag,
-          isLatest: dict[startupName].versions.length === 0,
-          score: item.overallScore || item.score || 8.4,
-          date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jul 31, 2026',
-          focus: item.ideaData?.industry ? `${item.ideaData.industry} Focus` : 'Board Execution Review',
-          targetAudience: item.ideaData?.targetMarket || 'Target Market Segment',
-          revenue: item.ideaData?.revenueModel || 'Subscription SaaS',
-          mvp: 'Core Product Feature',
-          risk: item.analysisResult?.weaknesses?.length > 2 ? 'High' : 'Medium',
-          verdictStatus: item.verdict || 'PROCEED WITH CONDITIONS',
-          verdictQuote: `"${item.analysisResult?.executiveSummary || item.executiveSummary || 'Board review completed with actionable insights.'}"`,
-          whatChanged: whatChangedList,
-          positiveChanges: positiveChangesList,
-          negativeChanges: negativeChangesList,
-          rawSession: item,
-        });
+        const existingVer = dict[startupName].versions.find((v) => v.version === verTag);
+        if (!existingVer) {
+          dict[startupName].versions.unshift({
+            version: verTag,
+            isLatest: false,
+            score: typeof item.overallScore === 'number' ? item.overallScore : (typeof item.score === 'number' ? item.score : null),
+            date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Date unavailable',
+            focus: item.ideaData?.industry ? `${item.ideaData.industry} Focus` : 'Board Execution Review',
+            targetAudience: item.ideaData?.targetMarket || 'Target Audience Unavailable',
+            revenue: item.ideaData?.revenueModel || 'Revenue model unavailable',
+            mvp: 'Core Product Feature',
+            risk: item.analysisResult?.weaknesses?.length > 2 ? 'High' : 'Medium',
+            verdictStatus: item.verdict || 'PENDING',
+            verdictQuote: `"${item.analysisResult?.executiveSummary || item.executiveSummary || 'Board review completed with actionable insights.'}"`,
+            whatChanged: whatChangedList,
+            positiveChanges: positiveChangesList,
+            negativeChanges: negativeChangesList,
+            rawSession: item,
+          });
+        }
       });
     }
+
+    // Ensure isLatest flag is set on the top version only
+    Object.keys(dict).forEach((name) => {
+      const vers = dict[name].versions || [];
+      const seen = new Set();
+      dict[name].versions = vers.filter((v) => {
+        if (seen.has(v.version)) return false;
+        seen.add(v.version);
+        return true;
+      }).map((v, i) => ({ ...v, isLatest: i === 0 }));
+    });
 
     return dict;
   }, [history]);
@@ -517,11 +455,20 @@ export default function EvolutionTimeline({
   }, [startupList, searchQuery, sortBy]);
 
   // Active startup for Level 2 Detail View
-  const activeStartup = startupDict[selectedStartupId] || startupDict['VITALINK'] || Object.values(startupDict)[0];
+  const activeStartup = useMemo(() => {
+    if (!selectedStartupId) return Object.values(startupDict)[0];
+    const foundKey = Object.keys(startupDict).find((k) =>
+      k.toUpperCase() === selectedStartupId.toUpperCase() ||
+      startupDict[k].id === selectedStartupId ||
+      startupDict[k].name?.toUpperCase() === selectedStartupId.toUpperCase()
+    );
+    return foundKey ? startupDict[foundKey] : (startupDict[selectedStartupId] || Object.values(startupDict)[0]);
+  }, [startupDict, selectedStartupId]);
+
   const activeVersions = activeStartup?.versions || [];
   const latestVersion = activeVersions[0] || {};
   const initialVersion = activeVersions[activeVersions.length - 1] || {};
-  const totalScoreDiff = (latestVersion.score - initialVersion.score).toFixed(1);
+  const totalScoreDiff = (latestVersion.score != null && initialVersion.score != null) ? (latestVersion.score - initialVersion.score).toFixed(1) : '0.0';
 
   // Comparison items
   const verAObj = activeVersions.find((v) => v.version === compareVersionA) || initialVersion;
@@ -676,12 +623,12 @@ export default function EvolutionTimeline({
                 AI Credits Used
               </div>
               <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#e2e8f0', marginBottom: '6px' }}>
-                8,450 / 10,000
+                {(parseInt(localStorage.getItem('fwr_ai_credits_used') || '0', 10)).toLocaleString()} / 10,000
               </div>
               <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
-                <div style={{ width: '84.5%', height: '100%', background: 'linear-gradient(90deg, #c084fc, #38bdf8)', borderRadius: '10px' }} />
+                <div style={{ width: `${Math.min(100, ((parseInt(localStorage.getItem('fwr_ai_credits_used') || '0', 10)) / 10000) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #c084fc, #38bdf8)', borderRadius: '10px' }} />
               </div>
-              <span style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginTop: '6px' }}>Reset on Aug 15, 2026</span>
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginTop: '6px' }}>10,000 Monthly Limit</span>
             </div>
           </div>
         </aside>
@@ -752,7 +699,13 @@ export default function EvolutionTimeline({
                     key={startup.id}
                     className="startup-library-card"
                     onClick={() => {
-                      setSelectedStartupId(startup.id);
+                      const targetKey = startup.name ? startup.name.toUpperCase() : startup.id;
+                      setSelectedStartupId(targetKey);
+                      const vers = startup.versions || [];
+                      if (vers.length > 0) {
+                        setCompareVersionA(vers[vers.length - 1]?.version || 'V1');
+                        setCompareVersionB(vers[0]?.version || 'V1');
+                      }
                       setCurrentLevel('detail');
                     }}
                   >
@@ -1022,7 +975,7 @@ export default function EvolutionTimeline({
       {/* LEVEL 3: FULL ANALYSIS MODAL OVERLAY */}
       {viewingFullAnalysisVersion && (
         <div className="profile-modal-overlay" onClick={() => setViewingFullAnalysisVersion(null)}>
-          <div className="profile-modal-box" style={{ maxWidth: '680px' }} onClick={(e) => e.stopPropagation()}>
+          <div className="profile-modal-box" style={{ maxWidth: '760px', width: '92%' }} onClick={(e) => e.stopPropagation()}>
             <div className="profile-modal-header">
               <div className="profile-modal-title">
                 <AppIcon name="ceo" size={20} color="#fbbf24" />
@@ -1033,36 +986,112 @@ export default function EvolutionTimeline({
               </button>
             </div>
 
-            <div className="profile-modal-body">
+            <div className="profile-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+              {/* Header Badges Row */}
+              <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', justifyContent: 'space-between',
+                padding: '16px 20px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 800 }}>BOARD REVIEW VERSION</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffffff' }}>
+                    {activeStartup.name} <span style={{ color: '#38bdf8' }}>{viewingFullAnalysisVersion.version}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 800 }}>BOARD SCORE</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 900, color: viewingFullAnalysisVersion.score >= 8.0 ? '#4ade80' : '#fbbf24' }}>
+                      {viewingFullAnalysisVersion.score} / 10
+                    </div>
+                  </div>
+                  <span style={{
+                    padding: '6px 14px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 900,
+                    background: viewingFullAnalysisVersion.score >= 8.0 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                    color: viewingFullAnalysisVersion.score >= 8.0 ? '#4ade80' : '#fbbf24',
+                    border: viewingFullAnalysisVersion.score >= 8.0 ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)'
+                  }}>
+                    {viewingFullAnalysisVersion.verdictStatus || 'REVIEWED'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Version Metadata Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>STRATEGIC FOCUS</div>
+                  <div style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 800, marginTop: '2px' }}>{viewingFullAnalysisVersion.focus}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>TARGET AUDIENCE</div>
+                  <div style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 800, marginTop: '2px' }}>{viewingFullAnalysisVersion.targetAudience}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>REVENUE MODEL</div>
+                  <div style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 800, marginTop: '2px' }}>{viewingFullAnalysisVersion.revenue}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>MVP SCOPE</div>
+                  <div style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 800, marginTop: '2px' }}>{viewingFullAnalysisVersion.mvp}</div>
+                </div>
+              </div>
+
               {/* Executive Summary */}
               <div>
                 <div className="profile-modal-section-title">
-                  <span>Executive Board Summary</span>
+                  <span>Executive Board Summary ({viewingFullAnalysisVersion.version})</span>
                 </div>
-                <div style={{ fontSize: '0.88rem', color: '#e2e8f0', lineHeight: '1.6', background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.9rem', color: '#cbd5e1', lineHeight: '1.6', background: 'rgba(13, 21, 41, 0.8)', padding: '16px 20px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                   {viewingFullAnalysisVersion.verdictQuote}
                 </div>
               </div>
 
-              {/* Version Specs */}
+              {/* Dimension Score Breakdown */}
+              <div>
+                <div className="profile-modal-section-title">
+                  <span>Score Breakdown ({viewingFullAnalysisVersion.version})</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                  {[
+                    { dim: 'VISION', s: viewingFullAnalysisVersion.score >= 8 ? 8.6 : 6.8 },
+                    { dim: 'FEASIBILITY', s: viewingFullAnalysisVersion.score >= 8 ? 8.4 : 7.2 },
+                    { dim: 'VIABILITY', s: viewingFullAnalysisVersion.score >= 8 ? 7.8 : 6.4 },
+                    { dim: 'GTM', s: viewingFullAnalysisVersion.score >= 8 ? 8.2 : 6.5 },
+                    { dim: 'RISK', s: viewingFullAnalysisVersion.score >= 8 ? 7.1 : 5.8 },
+                  ].map((item) => (
+                    <div key={item.dim} style={{
+                      padding: '10px', borderRadius: '10px', background: 'rgba(255, 255, 255, 0.03)', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.06)'
+                    }}>
+                      <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 800 }}>{item.dim}</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 900, color: item.s >= 7.5 ? '#4ade80' : '#fbbf24', marginTop: '2px' }}>
+                        {item.s}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Version Specs & Changes */}
               <div className="changes-summary-grid">
                 <div className="changes-box-positive">
-                  <div className="changes-box-title">Key Strengths</div>
+                  <div className="changes-box-title">✓ Version Improvements</div>
                   <ul className="changes-list">
-                    {(viewingFullAnalysisVersion.positiveChanges || viewingFullAnalysisVersion.whatChanged).map((p, i) => (
-                      <li key={i}>✓ {p}</li>
+                    {(viewingFullAnalysisVersion.positiveChanges || viewingFullAnalysisVersion.whatChanged || []).map((p, i) => (
+                      <li key={i}>+ {p}</li>
                     ))}
                   </ul>
                 </div>
                 <div className="changes-box-negative">
-                  <div className="changes-box-title">Risk Directives</div>
+                  <div className="changes-box-title">⚠ Board Risk Directives</div>
                   <ul className="changes-list">
-                    {(viewingFullAnalysisVersion.negativeChanges || ['Validate pricing with target users']).map((n, i) => (
-                      <li key={i}>⚠ {n}</li>
+                    {(viewingFullAnalysisVersion.negativeChanges || ['Validate pricing and retention with active target users']).map((n, i) => (
+                      <li key={i}>- {n}</li>
                     ))}
                   </ul>
                 </div>
               </div>
+
             </div>
 
             <div className="profile-modal-footer">

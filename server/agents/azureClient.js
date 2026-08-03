@@ -12,9 +12,10 @@ let _client = null;
 
 function getClient() {
   if (!_client) {
+    const endpoint = (process.env.AZURE_OPENAI_ENDPOINT || '').replace(/\/+$/, '');
     _client = new OpenAI({
       apiKey: process.env.AZURE_API_KEY,
-      baseURL: `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${process.env.AZURE_DEPLOYMENT_NAME}`,
+      baseURL: endpoint,
       defaultQuery: { 'api-version': process.env.AZURE_API_VERSION },
       defaultHeaders: { 'api-key': process.env.AZURE_API_KEY },
     });
@@ -60,24 +61,34 @@ export async function callAgent(systemPrompt, userMessage, options = {}) {
       { role: 'system', content: fullSystemPrompt },
       { role: 'user', content: userMessage },
     ];
+    const deploymentName = process.env.AZURE_DEPLOYMENT_NAME;
 
     console.log(`[MODEL] ${agentName} request started (Mode: LIVE_AI)`);
+    console.log(`[MODEL] ${agentName} endpoint=${process.env.AZURE_OPENAI_ENDPOINT} deployment=${deploymentName}`);
 
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const response = await client.chat.completions.create({
-          model: process.env.AZURE_DEPLOYMENT_NAME,
+          model: deploymentName,
           messages,
           temperature,
           max_tokens: maxTokens,
-          response_format: { type: 'json_object' },
         });
 
         const content = response.choices?.[0]?.message?.content;
-        if (content) {
+        if (!content) {
+          throw new Error('Azure OpenAI returned no content');
+        }
+
+        try {
           const parsed = JSON.parse(content);
           console.log(`[MODEL] ${agentName} response received (Mode: LIVE_AI)`);
           return { ...parsed, executionMode: 'LIVE_AI' };
+        } catch (parseErr) {
+          lastError = parseErr;
+          console.warn(`[MODEL] ${agentName} response parse failed: ${parseErr.message}`);
+          console.warn(`[MODEL] ${agentName} raw content: ${content}`);
+          throw parseErr;
         }
       } catch (err) {
         lastError = err;

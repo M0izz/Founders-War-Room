@@ -28,6 +28,8 @@ export const auth = initializeAuth(app, {
 
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
-googleProvider.addScope('profile');
+import { getFirestore } from 'firebase/firestore';
+
+export const db = getFirestore(app);
 
 export default app;

@@ -3,8 +3,7 @@ import AppIcon from './AppIcon.jsx';
 
 const RECENT_STARTUPS_DATA = [
   { id: 'vitalink', name: 'VITALINK', industry: 'HealthTech', iconName: 'heart', iconColor: '#38bdf8', score: 8.4, status: 'Approved', statusColor: '#22c55e', lastMeeting: '2 hours ago' },
-  { id: 'foodai', name: 'FoodAI', industry: 'FoodTech', iconName: 'food', iconColor: '#c084fc', score: 7.1, status: 'In Review', statusColor: '#f59e0b', lastMeeting: '1 day ago' },
-  { id: 'edubot', name: 'EduBot', industry: 'EdTech', iconName: 'edu', iconColor: '#4ade80', score: 9.2, status: 'Approved', statusColor: '#22c55e', lastMeeting: '3 days ago' },
+  { id: 'medora', name: 'MEDORA', industry: 'HealthTech', iconName: 'cto', iconColor: '#c084fc', score: 7.9, status: 'Approved', statusColor: '#22c55e', lastMeeting: '3 days ago' },
 ];
 
 const BOARD_MEMBERS_ASSEMBLED = [
@@ -57,7 +56,16 @@ export default function Dashboard({
       updatedAt: history[0].createdAt ? new Date(history[0].createdAt).toLocaleDateString() : '—',
       raw: history[0],
     }
-    : null;
+    : {
+      id: 'vitalink-v6',
+      name: 'VITALINK',
+      industry: 'HealthTech',
+      description: 'QR-code based emergency medical history & allergy access for surgery & emergency care.',
+      score: 8.4,
+      status: 'Ready for Board Review',
+      updatedAt: 'Jul 31, 2026',
+      raw: null,
+    };
 
   const recentList = history.length > 0
     ? history.slice(0, 3).map((h, i) => ({
@@ -65,15 +73,32 @@ export default function Dashboard({
       sessionId: h.sessionId || h.id,
       name: h.ideaData?.name || 'Unnamed',
       industry: h.ideaData?.industry || null,
-      iconName: RECENT_STARTUPS_DATA[i % 3].iconName,
-      iconColor: RECENT_STARTUPS_DATA[i % 3].iconColor,
+      iconName: RECENT_STARTUPS_DATA[i % RECENT_STARTUPS_DATA.length].iconName,
+      iconColor: RECENT_STARTUPS_DATA[i % RECENT_STARTUPS_DATA.length].iconColor,
       score: typeof h.overallScore === 'number' ? h.overallScore : null,
       verdict: h.verdict || null,
-      statusColor: '#f59e0b',
+      statusColor: h.overallScore >= 8 ? '#22c55e' : '#f59e0b',
       lastMeeting: h.createdAt ? new Date(h.createdAt).toLocaleDateString() : '—',
       raw: h,
     }))
-    : [];
+    : RECENT_STARTUPS_DATA.map((s) => ({
+      id: s.id,
+      sessionId: s.id,
+      name: s.name,
+      industry: s.industry,
+      iconName: s.iconName,
+      iconColor: s.iconColor,
+      score: s.score,
+      verdict: s.status,
+      statusColor: s.statusColor,
+      lastMeeting: s.lastMeeting,
+      raw: {
+        id: s.id,
+        ideaData: { name: s.name, industry: s.industry, description: `${s.name} startup idea analysis.` },
+        overallScore: s.score,
+        verdict: s.status,
+      },
+    }));
 
   // Interactive Notifications state
   const [showNotifications, setShowNotifications] = useState(false);
@@ -265,12 +290,12 @@ export default function Dashboard({
                 AI Credits Used
               </div>
               <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#e2e8f0', marginBottom: '6px' }}>
-                8,450 / 10,000
+                {(parseInt(localStorage.getItem('fwr_ai_credits_used') || '0', 10)).toLocaleString()} / 10,000
               </div>
               <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', overflow: 'hidden' }}>
-                <div style={{ width: '84.5%', height: '100%', background: 'linear-gradient(90deg, #c084fc, #38bdf8)', borderRadius: '10px' }} />
+                <div style={{ width: `${Math.min(100, ((parseInt(localStorage.getItem('fwr_ai_credits_used') || '0', 10)) / 10000) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #c084fc, #38bdf8)', borderRadius: '10px' }} />
               </div>
-              <span style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginTop: '6px' }}>Reset on Aug 15, 2026</span>
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginTop: '6px' }}>10,000 Monthly Limit</span>
             </div>
           </div>
         </aside>
