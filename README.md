@@ -1,222 +1,220 @@
-# 🏛️ Founder's War Room
+# 🏛️ Founder's War Room AI
 
-> **Before the Market Judges You, We Will.**
+> **"Before the Market Judges You, We Will."**
 
-[![Azure AI Foundry](https://img.shields.io/badge/Azure%20AI-Foundry-0078D4?style=for-the-badge&logo=microsoft-azure)](https://ai.azure.com)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
-[![Express](https://img.shields.io/badge/Express.js-4-000000?style=for-the-badge&logo=express)](https://expressjs.com)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-founders--war--room.vercel.app-0070F3?style=for-the-badge&logo=vercel&logoColor=white)](https://founders-war-room.vercel.app)
+[![Azure AI Foundry](https://img.shields.io/badge/Azure_AI-Foundry-0078D4?style=for-the-badge&logo=microsoft-azure&logoColor=white)](https://ai.azure.com)
+[![Firebase](https://img.shields.io/badge/Firebase-Auth_%26_Firestore-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
+[![Express](https://img.shields.io/badge/Express.js-Serverless-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com)
 
-## 🎯 What Is This?
+---
 
-Founder's War Room is an AI-powered virtual boardroom where entrepreneurs submit startup ideas and receive analysis from a panel of 8 specialized AI agents — each with a distinct role, personality, and evaluation criteria.
+## 📌 Executive Overview
 
-**This is NOT a chatbot.** This is a multi-agent reasoning pipeline that analyzes, debates, predicts failure, decides, and validates — simulating a real boardroom of expert stakeholders.
+**Founder's War Room AI** is a multi-agent AI executive boardroom designed for entrepreneurs, product managers, and venture capitalists. Instead of simple chatbot prompts, Founder's War Room deploys **8 specialized AI C-suite executives** who concurrently analyze, cross-examine, debate, and score startup ideas across 6 core business dimensions.
 
-## 🧠 Architecture: The Reasoning Pipeline
+The system features real-time **Server-Sent Events (SSE) streaming**, a **V1 → V2 startup versioning engine**, multi-tenant **Firebase Auth & Cloud Firestore isolation**, and comprehensive **Executive Reports** complete with score breakdown graphs and PDF export.
+
+---
+
+## ⚡ Key Features
+
+- 👔 **8 Specialized AI Executive Board Members**: Parallel execution from CEO, CTO, Investor, CMO, Customer, Competitor, Risk Advisor, and Grim Reaper.
+- ⚔️ **Cross-Examination & Dispute Engine**: Automatically detects contradictory assumptions between board members (e.g., Investor valuation vs. Customer willingness to pay) and forces targeted agent rebuttals.
+- 🚀 **V1 → V2 Startup Versioning System**: Create new iterations of an existing startup without re-entering details. Form auto-fills previous version data while tracking score deltas over time.
+- 📊 **Interactive Evolution Timeline**: Visual SVG score graph tracking startup improvements across versions, focus areas, and addressed board recommendations.
+- 🔒 **Multi-Tenant User Isolation**: Per-user Firebase Auth (Email/Password & Google OAuth) with Firestore security rules (`userId` scoping) ensuring 100% data privacy across accounts.
+- 📝 **Executive Memo & PDF Export**: Detailed report breakdown with SWOT, action items, board member quotes, and 1-click PDF download via `html2pdf.js`.
+- 🦈 **Shark Tank Mode Toggle**: Optional high-friction mode that transforms the board from collaborative advisors to aggressive, adversarial venture capitalists.
+- 🌐 **Multi-Language Support (i18n)**: Instant language switching across English, Spanish, French, German, Japanese, and Arabic.
+
+---
+
+## 🧠 Multi-Agent Architecture & Pipeline
 
 ```
-Analyze → Challenge → Predict Failure → Decide → Validate
+                       ┌─────────────────────────┐
+                       │  User Idea Submission   │
+                       └────────────┬────────────┘
+                                    │
+                       ┌────────────▼────────────┐
+                       │   Backend Orchestrator  │
+                       │    (Express + Azure)    │
+                       └────────────┬────────────┘
+                                    │
+           ┌────────────────────────┴────────────────────────┐
+           ▼                                                 ▼
+┌──────────────────────┐                         ┌──────────────────────┐
+│ Core Domain Agents   │                         │  💀 Grim Reaper      │
+│ (Parallel Execution) │                         │ (Sequential Autopsy) │
+│ CEO · CTO · Investor │                         │ Analyzes all 7 agent │
+│ CMO · Customer · Risk│                         │ findings for failure │
+└──────────┬───────────┘                         └──────────┬───────────┘
+           │                                                │
+           └────────────────────────┬───────────────────────┘
+                                    │
+                       ┌────────────▼────────────┐
+                       │ ⚔️ Cross-Examination    │
+                       │  Contradiction Engine   │
+                       └────────────┬────────────┘
+                                    │
+                       ┌────────────▼────────────┐
+                       │ 🏛️ Chairman Synthesis   │
+                       │ Consensus & Final Score │
+                       └────────────┬────────────┘
+                                    │
+                       ┌────────────▼────────────┐
+                       │  🔍 War Room Auditor    │
+                       │ Sentiment & Calibration │
+                       └────────────┬────────────┘
+                                    │
+                       ┌────────────▼────────────┐
+                       │ Firestore + SSE Stream  │
+                       └─────────────────────────┘
 ```
 
+---
+
+## 🤖 The Executive Board Roster
+
+| Agent Role | Domain Focus | Primary Evaluation Metrics |
+|---|---|---|
+| 👔 **Marcus Vance (CEO)** | Vision & Strategy | Market sizing, mission clarity, strategic moat, scalability |
+| ⚙️ **Dr. Aris Thorne (CTO)** | Technical Architecture | MVP scope, technical stack complexity, security, scalability |
+| 💰 **Priya Desai (Investor)** | Financial Viability | Unit economics, CAC/LTV ratio, monetization model, burn rate |
+| 👤 **Samir Khan (Customer)** | Product-Market Fit | Pain point urgency, UX friction, willingness-to-pay |
+| 📢 **Elena Rostova (CMO)** | Growth & Acquisition | Customer acquisition channels, viral loops, branding |
+| 🎯 **Competitor Specialist** | Market Landscape | Competitive landscape, saturation, differentiation |
+| ⚠️ **Dr. Quinn Hayes (Risk)** | Governance & Risk | Regulatory compliance, legal liabilities, operational risks |
+| 💀 **Grim Reaper** | Failure Analysis | Identifies fatal flaws, failure probability, startup autopsy |
+| 🏛️ **Board Chair** | Executive Synthesis | Resolves agent splits, calculates weighted score, issues final verdict |
+
+---
+
+## 📁 Repository Structure
+
 ```
-User Submits Idea
-       ↓
-Backend Orchestrator
-       ↓
-┌──────────────────────────────────────────┐
-│  7 Core Agents (Parallel)                │
-│  CEO · CTO · Investor · Customer         │
-│  Marketing · Competitor · Risk Advisor   │
-└──────────────────────────────────────────┘
-       ↓
-┌──────────────────────────────────────────┐
-│  💀 Grim Reaper (Sequential)             │
-│  Reads ALL 7 agents' findings            │
-│  Answers: "What kills this startup?"     │
-└──────────────────────────────────────────┘
-       ↓
-┌──────────────────────────────────────────┐
-│  ⚔️ Cross-Examination Engine             │
-│  Detects contradictions between agents   │
-│  Forces agents to defend or revise       │
-└──────────────────────────────────────────┘
-       ↓
-┌──────────────────────────────────────────┐
-│  🏛️ Chairman Verdict                     │
-│  Compares opinions, resolves splits      │
-│  Issues reasoned verdict with logic      │
-└──────────────────────────────────────────┘
-       ↓
-┌──────────────────────────────────────────┐
-│  🔍 War Room Auditor                     │
-│  Validates score consistency             │
-│  Detects hallucinations & contradictions │
-└──────────────────────────────────────────┘
-       ↓
-   Final Report → UI
+Founders-War-Room/
+├── api/
+│   └── index.js                    # Vercel Serverless Function entry point
+├── server/
+│   ├── index.js                    # Express API server entry
+│   ├── routes/
+│   │   └── analyze.js              # Streaming & standard POST /api/analyze endpoints
+│   └── agents/
+│       ├── azureClient.js          # Azure AI Foundry & OpenAI client
+│       ├── definitions.js          # Agent prompts & JSON schemas
+│       ├── orchestrator.js         # Multi-agent execution pipeline
+│       └── crossExamination.js     # Contradiction detection engine
+├── src/
+│   ├── main.jsx                    # React 19 root entry
+│   ├── App.jsx                     # View router & auth state management
+│   ├── firebase.js                 # Firebase Auth & Cloud Firestore setup
+│   ├── index.css                   # Global design tokens, animations & styling
+│   ├── components/
+│   │   ├── Dashboard.jsx           # Main founder dashboard & recent startup cards
+│   │   ├── BoardroomScene.jsx      # Live boardroom debate, radial stage & events feed
+│   │   ├── IdeaForm.jsx            # Pitch submission form with versioning banner
+│   │   ├── EvolutionTimeline.jsx   # V1→V2 score chart & version comparison tool
+│   │   ├── ReportsView.jsx         # Executive report memo & PDF exporter
+│   │   ├── SettingsView.jsx        # Account settings & Free Plan quota tracker
+│   │   └── auth/                   # Protected routes, Login, Signup & Password Reset
+│   └── utils/
+│       ├── api.js                  # SSE Stream client & simulation engine
+│       └── storage.js              # Firestore & user-scoped localStorage manager
+├── firestore.rules                 # Security rules for multi-tenant data isolation
+├── vercel.json                     # Vercel SPA rewrites & serverless configuration
+└── package.json
 ```
 
-## 🤖 The 8 AI Agents
-
-| Agent | Role | Focus |
-|-------|------|-------|
-| 👔 **CEO** | Vision Strategist | Mission, scalability, market positioning |
-| ⚙️ **CTO** | Feasibility Engineer | Technical architecture, MVP scope, complexity |
-| 💰 **Investor** | Business Viability Analyst | Unit economics, CAC/LTV, funding readiness |
-| 👤 **Customer** | Demand Validator | Problem urgency, willingness to pay, alternatives |
-| 📢 **Marketing** | Growth Architect | Acquisition channels, viral potential, brand |
-| 🎯 **Competitor** | Market Landscape Analyst | Competitors, saturation, differentiation |
-| ⚠️ **Risk Advisor** | Operational Risk Analyst | Legal, regulatory, execution, compliance |
-| 💀 **Grim Reaper** | Death Predictor | Fatal assumptions, failure probability, survival |
-
-Each agent returns:
-- **Score** (0-10)
-- **Confidence** (0.0-1.0)
-- Key observations, strengths, concerns, recommendations
-
-## 🔥 Key Differentiators
-
-### Cross-Examination (Second-Order Reasoning)
-When agents disagree (e.g., Investor says "huge market" but Customer says "I wouldn't pay"), the engine detects the contradiction and asks the conflicting agent to defend or revise their position. This creates **debate, reflection, and genuine reasoning**.
-
-### Sequential Grim Reaper
-The Grim Reaper doesn't analyze the raw idea — it reads ALL 7 agents' findings and synthesizes a **Startup Autopsy**: ranked causes of death with evidence from each agent.
-
-### Chairman Verdict (Not Simple Aggregation)
-The Chairman doesn't average scores. It identifies **consensus** (where agents agree), resolves **disagreements** (weighing by confidence), and issues a **reasoned verdict with a logic chain**.
-
-### War Room Auditor (Quality Validation)
-Deterministic checks for score-sentiment consistency, confidence calibration, cross-examination coverage, and recommendation alignment. No LLM — pure logic.
-
-### 🦈 Shark Tank Mode
-Toggle that transforms the entire experience from collaborative to adversarial. Agents become brutally critical. The Grim Reaper shows no mercy.
-
-### Version Memory
-Resubmit the same startup with improvements — the War Room compares versions and shows score deltas.
-
-## 🏗️ Foundry IQ Integration
-
-This project integrates **Azure AI Foundry** (Foundry IQ) through:
-
-1. **Azure AI Agent Service** — 8 specialized agents created and managed via the Azure OpenAI API provisioned through Foundry
-2. **Model Deployment** — GPT-4o model deployed via Azure AI Foundry project
-3. **Structured Agent Outputs** — JSON-formatted responses with confidence metrics enabling cross-agent reasoning
-4. **Multi-Agent Orchestration** — Foundry infrastructure handles parallel model invocations for concurrent agent analysis
-5. **Project Management** — All resources managed under a single Foundry project (`agentleague42`)
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- Azure AI Foundry project with GPT-4o deployment
-- API key from Azure AI Foundry portal
 
-### Setup
+- **Node.js**: v18.0.0 or higher
+- **npm**: v9.0.0 or higher
+- **Firebase Project**: Enabled Auth (Email & Google) and Cloud Firestore
+- **Azure AI Foundry or OpenAI API Key**: Model deployment (GPT-4o)
 
-```bash
-# Clone the repo
-git clone <repo-url>
-cd founders-war-room-ai
+---
 
-# Install frontend dependencies
-npm install
+### Local Installation
 
-# Install backend dependencies
-cd server
-npm install
-cd ..
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/M0izz/Founders-War-Room.git
+   cd Founders-War-Room
+   ```
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your Azure credentials
-```
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-### Run
+3. **Configure Environment Variables**
+   Create a `.env` file in the root directory:
+   ```env
+   # Azure AI Foundry / OpenAI Configuration
+   AZURE_API_KEY=your_azure_openai_api_key
+   AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/openai/v1
+   AZURE_DEPLOYMENT_NAME=gpt-4o
+   AZURE_API_VERSION=2025-01-01-preview
 
-```bash
-# Terminal 1: Start backend
-cd server
-npm run dev
+   # Firebase Configuration
+   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
 
-# Terminal 2: Start frontend
-npm run dev
-```
+   # Server Port
+   PORT=3001
+   ```
 
-Open `http://localhost:5173`
+4. **Run Development Mode**
+   ```bash
+   # Terminal 1: Run Frontend Dev Server (Vite)
+   npm run dev
 
-## 📊 Output
+   # Terminal 2: Run Backend API Server (Express)
+   npm run server
+   ```
 
-### Final Report Includes
-- Executive Summary
-- 5 Composite Scores (Health, Investment Readiness, Market Potential, Risk Index, Innovation)
-- SWOT Analysis
-- Cross-Examination Highlights
-- Startup Autopsy (Grim Reaper)
-- Chairman's Reasoned Verdict
-- Audit Quality Badge
-- Top 3 Next Actions
-- Final Recommendation: INVEST / INVEST WITH CONDITIONS / IMPROVE / PIVOT / REJECT
+5. **Access the App**
+   Open `http://localhost:5173` in your browser.
 
-### Export
-- PDF export of full War Room report
-- Session history saved locally
+---
 
-## 🛠️ Tech Stack
+## 🔒 Security & Data Privacy
 
-| Technology | Purpose |
-|-----------|---------|
-| React + Vite | Frontend SPA |
-| Vanilla CSS | Premium dark UI with glassmorphism |
-| Express.js | Backend API & orchestration |
-| Azure AI Foundry | AI agent platform |
-| GPT-4o (Azure) | Model powering all 8 agents |
-| html2pdf.js | PDF report export |
-| LocalStorage | Session history & version memory |
+Founder's War Room enforces strict **Multi-Tenant User Isolation**:
+- **Firestore Security Rules**: [firestore.rules](firestore.rules) ensures `read` and `write` operations are strictly authorized when `request.auth.uid == resource.data.userId`.
+- **Per-User Local Storage**: Storage keys are dynamically scoped (`warroom_history_{uid}`) on auth resolution and cleared on sign-out.
+- **Firestore Subcollections**: Startup snapshots are archived in isolated paths (`startups/{startupId}/versions/{versionId}`).
 
-## 📁 Project Structure
+---
 
-```
-├── index.html              # Entry HTML
-├── src/
-│   ├── main.jsx            # React entry
-│   ├── App.jsx             # Main app (state, routing)
-│   ├── index.css           # Full design system
-│   ├── components/
-│   │   ├── Landing.jsx     # Landing page
-│   │   ├── IdeaForm.jsx    # Idea submission form
-│   │   ├── Boardroom.jsx   # Results view
-│   │   ├── AgentCard.jsx   # Individual agent card
-│   │   ├── GrimReaper.jsx  # Startup Autopsy
-│   │   ├── CrossExamination.jsx
-│   │   ├── ChairmanVerdict.jsx
-│   │   ├── WarRoomAuditor.jsx
-│   │   ├── ScoreDashboard.jsx
-│   │   ├── FinalReport.jsx
-│   │   ├── VersionHistory.jsx
-│   │   └── LoadingPipeline.jsx
-│   └── utils/
-│       ├── api.js          # Backend API client
-│       └── storage.js      # LocalStorage utility
-├── server/
-│   ├── index.js            # Express server
-│   ├── routes/
-│   │   └── analyze.js      # POST /api/analyze
-│   └── agents/
-│       ├── azureClient.js  # Azure OpenAI client
-│       ├── definitions.js  # 8 agent prompts
-│       ├── orchestrator.js # Pipeline logic
-│       ├── crossExamination.js
-│       ├── chairmanVerdict.js
-│       └── auditor.js      # Deterministic validation
-├── .env                    # Azure credentials
-└── README.md
-```
-## 🚀 Planned Enhancements (Wow Factors)
+## 🛠️ Built With
 
-- **Iterative Scoring Loop**: auto‑regenerate, re‑score until overall score ≥ 8.5, with version history and diff view.
-- **Full Deliverable Suite**: PRD, Lean Canvas, Business Model Canvas, GTM plan, Pricing, MVP roadmap, Landing‑page copy, Investor pitch deck, Technical architecture.
-- **Persistent Version Memory**: stores each idea submission, shows score evolution, side‑by‑side comparisons, undo/branch.
-- **Execution Engine (Codex)**: one‑click GitHub repo creation, auto‑generated issues, README, starter code scaffold.
-- **Premium Visual Experience**: dark‑mode, glassmorphism, animated score rings, responsive layout.
+- **Frontend**: [React 19](https://react.dev/), [Vite 8](https://vitejs.dev/), Vanilla CSS3 (Glassmorphism & CSS Grid)
+- **Backend**: Node.js, Express.js Serverless Functions
+- **AI Infrastructure**: [Azure AI Foundry](https://ai.azure.com/) / GPT-4o
+- **Database & Auth**: [Firebase Auth](https://firebase.google.com/docs/auth) & [Cloud Firestore](https://firebase.google.com/docs/firestore)
+- **Deployment**: [Vercel Platform](https://vercel.com/)
 
-```
+---
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+<p align="center">
+  Made with ❤️ by <strong>Founder's War Room AI Team</strong>
+</p>
