@@ -286,6 +286,7 @@ export default function ReportsView({
   userName = 'Moiz',
   history = [],
   onOpenStartup,
+  onCreateNewVersion,
   onConveneBoard,
   selectedReportId = null,
   onSelectReport = () => { },
@@ -846,13 +847,35 @@ export default function ReportsView({
                           )}
                         </div>
 
-                        <button
-                          className="btn-view-evolution"
-                          onClick={() => onSelectReport(report.sessionId)}
-                          style={{ padding: '10px 20px', fontSize: '0.88rem', fontWeight: 800 }}
-                        >
-                          View Report →
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            className="btn-view-evolution"
+                            onClick={() => onSelectReport(report.sessionId)}
+                            style={{ padding: '10px 18px', fontSize: '0.88rem', fontWeight: 800 }}
+                          >
+                            View Report →
+                          </button>
+                          {onCreateNewVersion && (
+                            <button
+                              className="btn-view-evolution"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onCreateNewVersion(report.rawSession || report);
+                              }}
+                              style={{
+                                padding: '10px 16px',
+                                fontSize: '0.88rem',
+                                fontWeight: 800,
+                                background: 'rgba(56, 189, 248, 0.15)',
+                                border: '1px solid rgba(56, 189, 248, 0.4)',
+                                color: '#38bdf8'
+                              }}
+                              title="Create next version pre-filled with this report's details"
+                            >
+                              + Create V{(report.rawSession?.versionNumber || 1) + 1}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -902,9 +925,25 @@ export default function ReportsView({
                     <h3 style={{ margin: '4px 0 6px 0', fontSize: '1.1rem', color: '#c084fc', fontWeight: 800 }}>
                       {selectedReport.subtitle}
                     </h3>
-                    <div style={{ fontSize: '0.86rem', color: '#94a3b8', fontWeight: 500 }}>
+                    <div style={{ fontSize: '0.86rem', color: '#94a3b8', fontWeight: 500, marginBottom: '10px' }}>
                       {selectedReport.date} • {selectedReport.session}
                     </div>
+                    {onCreateNewVersion && (
+                      <button
+                        className="btn-view-evolution"
+                        onClick={() => onCreateNewVersion(selectedReport.rawSession || selectedReport)}
+                        style={{
+                          padding: '8px 16px',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          background: 'rgba(56, 189, 248, 0.15)',
+                          border: '1px solid rgba(56, 189, 248, 0.4)',
+                          color: '#38bdf8'
+                        }}
+                      >
+                        🚀 Create V{(selectedReport.rawSession?.versionNumber || 1) + 1} of {selectedReport.name}
+                      </button>
+                    )}
                   </div>
 
                   {/* Score Big Badge */}

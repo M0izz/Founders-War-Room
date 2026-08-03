@@ -66,6 +66,7 @@ export default function BoardroomScene({
   activeSession,
   sharkTankMode,
   onNewAnalysis,
+  onCreateNewVersion,
   onViewHistory,
   onBack,
 }) {
@@ -322,6 +323,19 @@ export default function BoardroomScene({
           <button className="btn-sm btn-ghost" onClick={handleExportPDF} title="Export PDF Report">
             <AppIcon name="history" size={16} /> Export PDF
           </button>
+          {isSessionFinished && onCreateNewVersion && (
+            <button
+              className="btn-sm btn-primary btn-glow"
+              style={{
+                background: 'rgba(56, 189, 248, 0.15)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                color: '#38bdf8'
+              }}
+              onClick={onCreateNewVersion}
+            >
+              🚀 Create V{(activeSession?.versionNumber || 1) + 1}
+            </button>
+          )}
           <button className="btn-sm btn-primary btn-glow" onClick={onNewAnalysis}>
             <AppIcon name="plus" size={16} /> New Session
           </button>

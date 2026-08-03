@@ -196,6 +196,43 @@ export default function App() {
     setCurrentView('boardroom');
   }, [activeSession]);
 
+  const handleCreateNewVersion = useCallback((startupItem) => {
+    const raw = startupItem?.raw || startupItem;
+    const name = raw?.ideaData?.name || raw?.name || startupItem?.name || 'VITALINK';
+    const history = getHistory();
+    const sid = raw?.startupId || ('startup_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+
+    const existingVersions = history.filter(
+      (h) => h.startupId === sid || (h.ideaData?.name && h.ideaData.name.toLowerCase().trim() === name.toLowerCase().trim())
+    );
+    const highestVer = existingVersions.reduce((max, h) => Math.max(max, h.versionNumber || 1), 1);
+    const nextVer = highestVer + 1;
+    const parent = existingVersions.find(h => h.versionNumber === highestVer) || existingVersions[0] || raw;
+
+    const baseIdea = parent?.ideaData || raw?.ideaData || {
+      name,
+      industry: raw?.industry || 'HealthTech',
+      description: raw?.description || `${name} startup concept`,
+      targetAudience: 'Target Customers',
+      revenueModel: 'Subscription (SaaS)',
+    };
+
+    const prefilledData = {
+      ...baseIdea,
+      name,
+      isNewVersion: true,
+      parentVersionNumber: highestVer,
+      targetVersionNumber: nextVer,
+      parentVersionId: parent?.sessionId || parent?.id || raw?.sessionId || raw?.id || null,
+      startupId: sid,
+    };
+
+    setIdeaData(prefilledData);
+    setAnalysisResult(null);
+    setActiveSession(null);
+    setCurrentView('form');
+  }, []);
+
   const handleNavigate = useCallback((viewKey) => {
     if (viewKey === 'dashboard') setCurrentView('dashboard');
     else if (viewKey === 'landing') setCurrentView('landing');
@@ -347,6 +384,7 @@ export default function App() {
           <Dashboard
             onConveneBoard={handleConveneBoard}
             onOpenStartup={handleOpenStartup}
+            onCreateNewVersion={handleCreateNewVersion}
             onNavigate={handleNavigate}
             history={historyList}
             userName={displayName}
@@ -378,6 +416,7 @@ export default function App() {
             activeSession={activeSession}
             sharkTankMode={sharkTankMode}
             onNewAnalysis={handleNewAnalysis}
+            onCreateNewVersion={() => handleCreateNewVersion(activeSession)}
             onViewHistory={() => setCurrentView('timeline')}
             onBack={handleBack}
           />
@@ -387,6 +426,7 @@ export default function App() {
           <EvolutionTimeline
             onNavigate={handleNavigate}
             onOpenStartup={handleOpenStartup}
+            onCreateNewVersion={handleCreateNewVersion}
             history={historyList}
             userName={displayName}
             onClose={() => setCurrentView('dashboard')}
@@ -404,6 +444,7 @@ export default function App() {
               setCurrentView('reports');
             }}
             onOpenStartup={handleOpenStartup}
+            onCreateNewVersion={handleCreateNewVersion}
             onConveneBoard={handleConveneBoard}
           />
         )}

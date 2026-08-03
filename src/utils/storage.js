@@ -15,19 +15,55 @@ function slugify(name) {
 }
 
 /**
- * Write a session object to Firestore collection 'sessions'
+ * Write a session object to Firestore with structured startup/version schema:
+ * 1) startups/{startupId} (parent startup meta)
+ * 2) startups/{startupId}/versions/{versionId} (version subcollection)
+ * 3) sessions/{sessionId} (flat collection for backwards compatibility)
  */
 export async function saveSessionToFirestore(session) {
   if (!db || !session || (!session.sessionId && !session.id)) return;
   const sid = session.sessionId || session.id;
+  const startupId = session.startupId || slugify(session.ideaData?.name);
+
   try {
-    const ref = doc(db, 'sessions', sid);
-    await setDoc(ref, {
+    // 1) Update parent startup doc
+    const startupRef = doc(db, 'startups', startupId);
+    await setDoc(startupRef, {
+      name: session.ideaData?.name || 'Startup',
+      startupId,
+      userId: session.userId || null,
+      currentVersion: session.versionNumber || 1,
+      latestScore: session.overallScore || null,
+      verdict: session.verdict || null,
+      updatedAt: new Date().toISOString(),
+      createdAt: session.createdAt || new Date().toISOString(),
+    }, { merge: true });
+
+    // 2) Write to subcollection startups/{startupId}/versions/{versionId}
+    const versionRef = doc(db, 'startups', startupId, 'versions', sid);
+    await setDoc(versionRef, {
+      versionId: sid,
+      versionNumber: session.versionNumber || 1,
+      createdAt: session.createdAt || new Date().toISOString(),
+      basedOnVersion: session.previousVersionId || null,
+      startupDetails: session.ideaData || {},
+      analysis: session.analysisResult || null,
+      events: session.events || [],
+      overallScore: session.overallScore || null,
+      verdict: session.verdict || null,
+      whatChanged: session.whatChanged || [],
+      addressedRecommendations: session.addressedRecommendations || [],
+      syncedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    // 3) Flat sessions collection for legacy queries & backward compatibility
+    const sessionRef = doc(db, 'sessions', sid);
+    await setDoc(sessionRef, {
       ...session,
       syncedAt: new Date().toISOString()
     }, { merge: true });
   } catch (err) {
-    console.warn('[FIRESTORE SESSION SYNC ERROR]', err);
+    console.warn('[FIRESTORE SESSION & VERSION SYNC ERROR]', err);
   }
 }
 
@@ -70,10 +106,18 @@ export async function syncLocalHistoryToFirestore(userId) {
 // userId: the Firebase UID of the authenticated user (null for anonymous/legacy sessions)
 export function createSession(ideaData, sharkTankMode = false, userId = null) {
   const history = getHistory();
-  const startupId = slugify(ideaData?.name);
-  const previousVersions = history.filter((h) => h.startupId === startupId);
-  const previousEntry = previousVersions[0] || null;
-  const versionNumber = previousEntry ? (previousEntry.versionNumber || previousVersions.length) + 1 : 1;
+  const startupId = ideaData?.startupId || slugify(ideaData?.name);
+  const previousVersions = history.filter((h) => h.startupId === startupId || (h.ideaData?.name && h.ideaData.name.toLowerCase().trim() === ideaData?.name?.toLowerCase().trim()));
+  const previousEntry = previousVersions.find(h => h.id === ideaData?.parentVersionId || h.sessionId === ideaData?.parentVersionId) || previousVersions[0] || null;
+
+  let versionNumber = 1;
+  if (ideaData?.targetVersionNumber) {
+    versionNumber = ideaData.targetVersionNumber;
+  } else if (previousVersions.length > 0) {
+    const maxVer = previousVersions.reduce((max, h) => Math.max(max, h.versionNumber || 1), 0);
+    versionNumber = maxVer + 1;
+  }
+
   const sessionId = 'sess_' + generateId();
   const now = Date.now();
 

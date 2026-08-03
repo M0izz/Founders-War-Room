@@ -39,6 +39,7 @@ const LIVE_ACTIVITY_FEED = [
 export default function Dashboard({
   onConveneBoard,
   onOpenStartup,
+  onCreateNewVersion,
   onNavigate,
   history = [],
   userName = 'Founder',
@@ -386,7 +387,7 @@ export default function Dashboard({
                 </div>
 
                 {/* Bottom Golden Action Button */}
-                <div className="v2-hero-action-footer">
+                <div className="v2-hero-action-footer" style={{ display: 'flex', gap: '12px' }}>
                   <button
                     className="v2-btn-enter-warroom-glowing"
                     onClick={() => activeStartup ? onOpenStartup(activeStartup.raw || activeStartup) : onConveneBoard()}
@@ -395,6 +396,21 @@ export default function Dashboard({
                     <span>{activeStartup ? 'Enter War Room' : 'Convene the Board'}</span>
                     <span className="btn-arrow-right">&gt;</span>
                   </button>
+                  {activeStartup && onCreateNewVersion && (
+                    <button
+                      className="v2-btn-enter-warroom-glowing"
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.15)',
+                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                        boxShadow: 'none',
+                        color: '#38bdf8'
+                      }}
+                      onClick={() => onCreateNewVersion(activeStartup.raw || activeStartup)}
+                    >
+                      <AppIcon name="plus" size={18} color="#38bdf8" />
+                      <span>+ Create V{(activeStartup.raw?.versionNumber || 1) + 1}</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -454,6 +470,26 @@ export default function Dashboard({
                               border: '1px solid rgba(13,148,136,0.2)',
                               borderRadius: '4px', padding: '2px 5px',
                             }}>SYNCED</span>
+                          )}
+                          {onCreateNewVersion && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onCreateNewVersion(item.raw || item);
+                              }}
+                              style={{
+                                fontSize: '9px',
+                                fontWeight: 800,
+                                color: '#38bdf8',
+                                background: 'rgba(56,189,248,0.1)',
+                                border: '1px solid rgba(56,189,248,0.2)',
+                                borderRadius: '4px',
+                                padding: '2px 6px',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              + V{(item.raw?.versionNumber || 1) + 1}
+                            </button>
                           )}
                           <span className="recent-continue-txt">Continue &rarr;</span>
                         </div>

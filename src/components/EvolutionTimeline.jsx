@@ -322,6 +322,7 @@ function ScoreEvolutionChart({ versions = [] }) {
 export default function EvolutionTimeline({
   onNavigate,
   onOpenStartup,
+  onCreateNewVersion,
   history = [],
   userName = 'Moiz',
   onClose,
@@ -744,10 +745,45 @@ export default function EvolutionTimeline({
                     </div>
 
                     {/* Card Footer */}
-                    <div className="startup-card-footer">
-                      <button className="btn-view-evolution">
+                    <div className="startup-card-footer" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', width: '100%' }}>
+                      <button
+                        className="btn-view-evolution"
+                        style={{ padding: '8px 16px', fontSize: '0.82rem' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const targetKey = startup.name ? startup.name.toUpperCase() : startup.id;
+                          setSelectedStartupId(targetKey);
+                          const vers = startup.versions || [];
+                          if (vers.length > 0) {
+                            setCompareVersionA(vers[vers.length - 1]?.version || 'V1');
+                            setCompareVersionB(vers[0]?.version || 'V1');
+                          }
+                          setCurrentLevel('detail');
+                        }}
+                      >
                         View Evolution →
                       </button>
+                      {onCreateNewVersion && (
+                        <button
+                          className="btn-view-evolution"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const verTrail = startup.versionTrail || [];
+                            const topVer = verTrail[0];
+                            onCreateNewVersion(topVer?.rawSession || startup);
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            fontSize: '0.82rem',
+                            background: 'rgba(56, 189, 248, 0.15)',
+                            border: '1px solid rgba(56, 189, 248, 0.4)',
+                            color: '#38bdf8'
+                          }}
+                          title="Create new version pre-filled with this startup's details"
+                        >
+                          + V{startup.versionCount + 1}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -784,6 +820,25 @@ export default function EvolutionTimeline({
                   }}>
                     {activeStartup.category}
                   </span>
+                  {onCreateNewVersion && (
+                    <button
+                      className="btn-view-evolution"
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '0.78rem',
+                        background: 'rgba(56, 189, 248, 0.15)',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        color: '#38bdf8',
+                        borderRadius: '12px'
+                      }}
+                      onClick={() => {
+                        const topVer = activeVersions[0];
+                        onCreateNewVersion(topVer?.rawSession || activeStartup);
+                      }}
+                    >
+                      🚀 Create V{activeVersions.length + 1} Version
+                    </button>
+                  )}
                 </div>
                 <p className="evolution-subtext">
                   <strong>{activeVersions.length} Versions</strong> · <strong>{latestVersion.score}/10 Current Score</strong> ·

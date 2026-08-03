@@ -86,7 +86,14 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
     e.preventDefault();
     if (!formData.name.trim() || !formData.description.trim()) return;
     setIsSubmitting(true);
-    await onSubmit(formData, sharkTank);
+    await onSubmit({
+      ...formData,
+      isNewVersion: initialData?.isNewVersion || false,
+      parentVersionNumber: initialData?.parentVersionNumber || null,
+      targetVersionNumber: initialData?.targetVersionNumber || null,
+      parentVersionId: initialData?.parentVersionId || null,
+      startupId: initialData?.startupId || null,
+    }, sharkTank);
     setIsSubmitting(false);
   };
 
@@ -102,8 +109,38 @@ export default function IdeaForm({ onSubmit, onBack, initialData, error }) {
             <AppIcon name="ceo" size={16} color="#60a5fa" />
             <span>EXECUTIVE BRIEFING</span>
           </div>
-          <h1 className="notion-greeting-title">Good Evening, Founder.</h1>
-          <p className="notion-greeting-sub">What are we building today?</p>
+          <h1 className="notion-greeting-title">
+            {initialData?.isNewVersion ? `Create V${initialData.targetVersionNumber || 2} Version` : 'Good Evening, Founder.'}
+          </h1>
+          <p className="notion-greeting-sub">
+            {initialData?.isNewVersion ? `Updating ${formData.name} for another board review.` : 'What are we building today?'}
+          </p>
+
+          {/* V1 -> V2 Versioning Info Box */}
+          {initialData?.isNewVersion && (
+            <div style={{
+              background: 'rgba(56, 189, 248, 0.1)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              marginTop: '16px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+              textAlign: 'left'
+            }}>
+              <div style={{ fontSize: '1.4rem' }}>🚀</div>
+              <div>
+                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#38bdf8' }}>
+                  Creating Version V{initialData.targetVersionNumber || 2} for "{formData.name}"
+                </div>
+                <div style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: '2px' }}>
+                  Pre-filled with V{initialData.parentVersionNumber || 1} details. Update only what changed below! V{initialData.parentVersionNumber || 1} will remain unchanged and fully accessible.
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Quick Demo Mode Presets */}
           <div className="demo-mode-bar">
