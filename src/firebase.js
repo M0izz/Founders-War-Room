@@ -8,12 +8,12 @@ import {
 } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDemoDummyKeyForVercelFallback0',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCAZkhPBNumKkNgkWal79MeV7zvH29nI3M',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'founders-war-room.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'founders-war-room',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'founders-war-room.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789:web:abcdef',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'founders-war-room.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '1000347783866',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:1000347783866:web:7359075e7a9a1e0b0de883',
 };
 
 const app = initializeApp(firebaseConfig);
